@@ -1,0 +1,38 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "$uid === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'commander' || root.child('users').child(auth.uid).child('role').val() === 'CEO' || root.child('users').child(auth.uid).child('role').val() === 'admin'"
+      }
+    },
+    "leaves": {
+      ".read": "auth != null",
+      "$leaveId": {
+        ".write": "auth != null"
+      }
+    },
+    "overtimes": {
+      ".read": "auth != null",
+      "$otId": {
+        ".write": "auth != null"
+      }
+    },
+    "payslips": {
+      "$uid": {
+        ".read": "$uid === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'commander' || root.child('users').child(auth.uid).child('role').val() === 'CEO'",
+        ".write": "root.child('users').child(auth.uid).child('role').val() === 'commander'"
+      }
+    },
+    "bankAccounts": {
+      "$uid": {
+        ".read": "$uid === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'commander' || root.child('users').child(auth.uid).child('role').val() === 'CEO'",
+        ".write": "root.child('users').child(auth.uid).child('role').val() === 'commander'"
+      }
+    },
+    "companyProfile": {
+      ".read": "auth != null",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'commander' || root.child('users').child(auth.uid).child('role').val() === 'CEO'"
+    }
+  }
+}
