@@ -117,7 +117,7 @@ const Sidebar = ({ appUser, setPage, currentPage }) => {
             <span>🌈 เลือกธีมทั้งหน้า</span>
           </button>
 
-          {/* 📅 Holiday Calendar - NEW! */}
+          {/* Holiday Calendar - NEW! */}
           <button
             type="button"
             onClick={() => navigateTo('holiday_calendar')}

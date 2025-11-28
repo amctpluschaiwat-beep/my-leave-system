@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ref, onValue, set, remove } from 'firebase/database';
+import { ref, onValue, set, remove, push } from 'firebase/database';
 import { db } from '../config/firebase';
 
 const HolidayCalendar = ({ appUser }) => {
@@ -12,6 +12,8 @@ const HolidayCalendar = ({ appUser }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [holidayType, setHolidayType] = useState('หยุด');
   const [holidayReason, setHolidayReason] = useState('');
+  const [holidayHistory, setHolidayHistory] = useState([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   // 9 แผนก
   const departments = [
@@ -64,9 +66,23 @@ const HolidayCalendar = ({ appUser }) => {
 
     return () => unsubscribe();
   }, [selectedDepartment]);
+  
+  const { daysInMonth, startDayOfWeek, year, month } = getDaysInMonth(currentMonth);
 
+  // Function to log history
+  const logHolidayHistory = async (action, details) => {
+    const historyRef = ref(db, `holidayHistory/${year}-${month + 1}`);
+    const newLogEntry = {
+      action, // 'set' or 'delete'
+      ...details,
+      timestamp: new Date().toISOString(),
+      adminName: appUser.name,
+    };
+    await push(historyRef, newLogEntry);
+  };
+  
   // Get days in month
-  const getDaysInMonth = (date) => {
+  function getDaysInMonth(date) {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -76,8 +92,6 @@ const HolidayCalendar = ({ appUser }) => {
 
     return { daysInMonth, startDayOfWeek, year, month };
   };
-
-  const { daysInMonth, startDayOfWeek, year, month } = getDaysInMonth(currentMonth);
 
   // Check if date has holiday for selected employee
   const getHolidayForDate = (day) => {
@@ -113,12 +127,20 @@ const HolidayCalendar = ({ appUser }) => {
 
     for (const dateStr of selectedDates) {
       const holidayRef = ref(db, `holidays/${selectedDepartment}/${dateStr}/${selectedEmployee.uid}`);
-      await set(holidayRef, {
+      const holidayData = {
         employeeName: selectedEmployee.name,
         type: holidayType,
         reason: holidayReason,
         createdBy: appUser.uid,
         createdAt: new Date().toISOString()
+      };
+      await set(holidayRef, holidayData);
+      
+      // Log action
+      await logHolidayHistory('set', { 
+        employeeName: selectedEmployee.name, 
+        date: dateStr, 
+        type: holidayType 
       });
     }
 
@@ -129,11 +151,34 @@ const HolidayCalendar = ({ appUser }) => {
   };
 
   // Delete holiday
-  const handleDeleteHoliday = async (dateStr, employeeUid) => {
+  const handleDeleteHoliday = async (dateStr, employeeUid, holidayType) => {
     if (window.confirm('ต้องการลบวันหยุดนี้?')) {
       const holidayRef = ref(db, `holidays/${selectedDepartment}/${dateStr}/${employeeUid}`);
       await remove(holidayRef);
+
+      // Log action
+      const employee = employees.find(e => e.uid === employeeUid);
+      await logHolidayHistory('delete', { 
+        employeeName: employee?.name || 'Unknown', 
+        date: dateStr, 
+        type: holidayType 
+      });
     }
+  };
+
+  // Fetch holiday history for the current month
+  const fetchHolidayHistory = () => {
+    const historyRef = ref(db, `holidayHistory/${year}-${month + 1}`);
+    onValue(historyRef, (snapshot) => {
+      const history = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          history.push({ id: childSnapshot.key, ...childSnapshot.val() });
+        });
+      }
+      setHolidayHistory(history.reverse()); // Show newest first
+      setShowHistoryModal(true);
+    });
   };
 
   // Navigate months
@@ -152,240 +197,243 @@ const HolidayCalendar = ({ appUser }) => {
 
   const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 
-  const isAdmin = appUser?.role === 'Manager' || appUser?.role === 'hr' || appUser?.role === 'CEO' || appUser?.role === 'commander';
+  const isAdmin = appUser?.role === 'Manager' || appUser?.role === 'hr' || appUser?.role === 'commander';
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-blue-900 mb-2 flex items-center">
-          <i className='bx bx-calendar text-5xl mr-3 text-blue-700'></i>
-          ปฏิทินวันหยุดพนักงาน
-        </h1>
-        <p className="text-blue-600">จัดวันหยุดให้พนักงานทีละคน แยกตามแผนกทั้ง 9 แผนก</p>
+      <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-tplus-orange mb-6">
+        <h1 className="text-2xl font-bold text-tplus-text">ปฏิทินวันหยุดพนักงาน</h1>
+        <p className="text-slate-500 mt-1">จัดวันหยุดให้พนักงานแยกตามแผนก</p>
       </div>
 
-      {/* Department Tabs */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-blue-100">
-        <h2 className="text-lg font-bold text-blue-900 mb-4">1️⃣ เลือกแผนก:</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-          {departments.map((dept) => (
-            <button
-              key={dept}
-              onClick={() => {
-                setSelectedDepartment(dept);
-                setSelectedEmployee(null);
-                setSelectedDates([]);
-              }}
-              className={`px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                selectedDepartment === dept
-                  ? 'bg-blue-700 text-white shadow-lg scale-105'
-                  : 'bg-blue-50 text-blue-900 border-2 border-blue-200 hover:bg-blue-100 hover:border-blue-400'
-              }`}
-            >
-              {dept}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Employee Selection */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border border-green-100">
-        <h2 className="text-lg font-bold text-green-900 mb-4">2️⃣ เลือกพนักงาน (1 คน):</h2>
-        {employees.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
-            {employees.map((emp) => (
-              <button
-                key={emp.uid}
-                onClick={() => {
-                  setSelectedEmployee(emp);
-                  setSelectedDates([]);
-                }}
-                className={`px-4 py-3 rounded-xl font-medium text-left transition-all duration-300 ${
-                  selectedEmployee?.uid === emp.uid
-                    ? 'bg-green-600 text-white shadow-lg scale-105'
-                    : 'bg-green-50 text-green-900 border-2 border-green-200 hover:bg-green-100 hover:border-green-400'
-                }`}
-              >
-                <div className="font-semibold">{emp.name}</div>
-                <div className="text-xs opacity-75">{emp.email}</div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <i className='bx bx-user-x text-6xl mb-3 text-gray-400'></i>
-            <p>ไม่พบพนักงานในแผนกนี้</p>
-          </div>
-        )}
-      </div>
-
-      {selectedEmployee && (
+      {/* Admin Controls */}
+      {isAdmin && (
         <>
-          {/* Current Selection Info */}
-          <div className="bg-gradient-to-r from-green-700 to-green-600 rounded-2xl shadow-xl p-6 text-white mb-6">
-            <h3 className="text-2xl font-bold mb-2">✅ กำลังจัดวันหยุดให้:</h3>
-            <p className="text-xl">{selectedEmployee.name}</p>
-            <p className="text-green-100">แผนก: {selectedDepartment}</p>
-            {selectedDates.length > 0 && (
-              <p className="mt-2 text-green-100">เลือกแล้ว {selectedDates.length} วัน</p>
-            )}
-          </div>
-
-          {/* Calendar Header */}
-          <div className="bg-gradient-to-r from-blue-700 to-blue-600 rounded-t-2xl shadow-xl p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <button
-                onClick={previousMonth}
-                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all duration-300 hover:scale-110"
-              >
-                <i className='bx bx-chevron-left text-2xl'></i>
-              </button>
-              
-              <div className="text-center">
-                <h2 className="text-3xl font-bold mb-1">
-                  {monthNames[month]} {year + 543}
-                </h2>
-                <p className="text-blue-100">3️⃣ คลิกที่วันที่ต้องการจัดวันหยุด (เลือกได้หลายวัน)</p>
-              </div>
-
-              <button
-                onClick={nextMonth}
-                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-xl transition-all duration-300 hover:scale-110"
-              >
-                <i className='bx bx-chevron-right text-2xl'></i>
-              </button>
-            </div>
-
-            {/* Holiday Type Selection */}
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <span className="text-blue-100">ประเภท:</span>
-              {holidayTypes.map((type) => (
+          {/* Department Tabs */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-tplus-border">
+            <h2 className="text-lg font-semibold text-tplus-text mb-4">1. เลือกแผนก</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+              {departments.map((dept) => (
                 <button
-                  key={type}
-                  onClick={() => setHolidayType(type)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                    holidayType === type
-                      ? 'bg-white text-blue-700 shadow-lg'
-                      : 'bg-white/20 hover:bg-white/30 text-white'
+                  key={dept}
+                  onClick={() => {
+                    setSelectedDepartment(dept);
+                    setSelectedEmployee(null);
+                    setSelectedDates([]);
+                  }}
+                  className={`px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                    selectedDepartment === dept
+                      ? 'bg-tplus-orange text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {type}
+                  {dept}
                 </button>
               ))}
             </div>
-
-            {selectedDates.length > 0 && (
-              <div className="mt-4 text-center">
-                <button
-                  onClick={() => setShowConfirmModal(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 shadow-lg"
-                >
-                  <i className='bx bx-save mr-2'></i>
-                  บันทึก {selectedDates.length} วัน
-                </button>
-              </div>
-            )}
           </div>
 
-          {/* Calendar Grid */}
-          <div className="bg-white rounded-b-2xl shadow-xl p-6 border-x border-b border-blue-100">
-            {/* Day Names */}
-            <div className="grid grid-cols-7 gap-2 mb-4">
-              {dayNames.map((day, i) => (
-                <div
-                  key={i}
-                  className={`text-center font-bold py-3 rounded-lg ${
-                    i === 0 ? 'bg-red-100 text-red-700' : 
-                    i === 6 ? 'bg-blue-100 text-blue-700' : 
-                    'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-2">
-              {/* Empty cells for days before month starts */}
-              {[...Array(startDayOfWeek)].map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square"></div>
-              ))}
-
-              {/* Days of month */}
-              {[...Array(daysInMonth)].map((_, i) => {
-                const day = i + 1;
-                const holiday = getHolidayForDate(day);
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const dayOfWeek = new Date(year, month, day).getDay();
-                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
-                const isSelected = selectedDates.includes(dateStr);
-
-                return (
+          {/* Employee Selection */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-tplus-border">
+            <h2 className="text-lg font-semibold text-tplus-text mb-4">2. เลือกพนักงาน</h2>
+            {employees.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-60 overflow-y-auto p-1">
+                {employees.map((emp) => (
                   <button
-                    key={day}
-                    onClick={() => toggleDateSelection(day)}
-                    disabled={!isAdmin}
-                    className={`aspect-square p-2 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
-                      isSelected
-                        ? 'bg-gradient-to-br from-yellow-200 to-amber-200 border-yellow-500 shadow-lg scale-105'
-                        : holiday
-                        ? 'bg-gradient-to-br from-red-50 to-pink-50 border-red-300 hover:border-red-500'
-                        : isToday
-                        ? 'bg-gradient-to-br from-blue-50 to-sky-50 border-blue-500 shadow-md'
-                        : isWeekend
-                        ? 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                        : 'bg-white border-gray-200 hover:border-blue-300'
-                    } ${isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
+                    key={emp.uid}
+                    onClick={() => {
+                      setSelectedEmployee(emp);
+                      setSelectedDates([]);
+                    }}
+                    className={`p-3 rounded-lg text-left transition-all duration-200 border-2 ${
+                      selectedEmployee?.uid === emp.uid
+                        ? 'bg-tplus-orange/10 border-tplus-orange text-tplus-orange'
+                        : 'bg-white border-tplus-border hover:bg-slate-50 hover:border-slate-300'
+                    }`}
                   >
-                    <div className={`text-right text-sm font-bold mb-1 ${
-                      isSelected ? 'text-yellow-900' :
-                      holiday ? 'text-red-700' :
-                      isToday ? 'text-blue-700' :
-                      isWeekend ? 'text-gray-500' :
-                      'text-gray-700'
-                    }`}>
-                      {day}
-                    </div>
-
-                    {isSelected && (
-                      <div className="text-center">
-                        <i className='bx bx-check-circle text-2xl text-yellow-700'></i>
-                      </div>
-                    )}
-
-                    {holiday && !isSelected && (
-                      <div className="space-y-1">
-                        <div className={`text-white text-xs px-2 py-1 rounded-lg font-semibold ${
-                          holiday.type === 'หยุด' ? 'bg-cyan-500' :
-                          holiday.type === 'WDF' ? 'bg-green-600' :
-                          holiday.type === 'ลาป่วย' ? 'bg-red-600' :
-                          'bg-purple-600'
-                        }`}>
-                          {holiday.type}
-                        </div>
-                        {isAdmin && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteHoliday(dateStr, selectedEmployee.uid);
-                            }}
-                            className="w-full bg-red-500 hover:bg-red-600 text-white text-xs py-1 rounded transition-colors"
-                          >
-                            <i className='bx bx-trash'></i>
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <div className="font-semibold text-sm">{emp.name}</div>
+                    <div className="text-xs opacity-75">{emp.email}</div>
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-slate-500">
+                <i className='bx bx-user-x text-5xl mb-2 text-slate-300'></i>
+                <p>ไม่พบพนักงานในแผนกนี้</p>
+              </div>
+            )}
           </div>
         </>
       )}
+
+      {/* Calendar Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-tplus-border">
+          {/* Calendar Header */}
+          <div className="p-4 sm:p-6 border-b border-tplus-border">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={previousMonth}
+                  className="p-2 rounded-md hover:bg-slate-100 transition-colors"
+                >
+                  <i className='bx bx-chevron-left text-2xl text-slate-600'></i>
+                </button>
+                
+                <h2 className="text-xl font-bold text-tplus-text text-center flex-1">
+                  {monthNames[month]} {year + 543}
+                </h2>
+
+                <button
+                  onClick={nextMonth}
+                  className="p-2 rounded-md hover:bg-slate-100 transition-colors"
+                >
+                  <i className='bx bx-chevron-right text-2xl text-slate-600'></i>
+                </button>
+              </div>
+              
+              <button
+                onClick={fetchHolidayHistory}
+                className="text-sm bg-white border border-tplus-border text-slate-700 font-medium py-2 px-4 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2"
+              >
+                <i className='bx bx-history'></i>
+                ดูประวัติการแก้ไข
+              </button>
+            </div>
+            {isAdmin && selectedEmployee && (
+              <div className="mt-4 p-3 bg-tplus-orange/10 rounded-lg text-center">
+                <p className="text-sm font-medium text-tplus-orange">
+                  กำลังจัดวันหยุดให้: <span className="font-bold">{selectedEmployee.name}</span>
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Admin Controls inside calendar */}
+          {isAdmin && selectedEmployee && (
+            <div className="p-4 bg-slate-50/50 border-b border-tplus-border">
+                <p className="text-sm font-semibold text-slate-700 mb-2">3. คลิกเลือกวัน และประเภทวันหยุด</p>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-slate-600">ประเภท:</span>
+                      {holidayTypes.map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setHolidayType(type)}
+                          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                            holidayType === type
+                              ? 'bg-tplus-orange text-white'
+                              : 'bg-white border border-tplus-border text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          {type}
+                        </button>
+                      ))}
+                    </div>
+
+                    {selectedDates.length > 0 && (
+                      <button
+                        onClick={() => setShowConfirmModal(true)}
+                        className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
+                      >
+                        <i className='bx bx-save'></i>
+                        บันทึก ({selectedDates.length})
+                      </button>
+                    )}
+                </div>
+            </div>
+          )}
+
+          {/* Calendar Table */}
+          <div className="p-2 sm:p-4">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  {dayNames.map((day, i) => (
+                    <th key={i} className="p-2 text-sm font-medium text-center text-slate-500 border border-tplus-border">
+                      {day}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const daysInMonthArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+                  const blanks = Array.from({ length: startDayOfWeek }, () => null);
+                  const cells = [...blanks, ...daysInMonthArray];
+                  const rows = [];
+                  let row = [];
+
+                  cells.forEach((cell, i) => {
+                    row.push(cell);
+                    if ((i + 1) % 7 === 0) {
+                      rows.push(row);
+                      row = [];
+                    }
+                  });
+                  if (row.length > 0) rows.push(row);
+
+                  return rows.map((r, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {r.map((day, dayIndex) => {
+                        if (day === null) {
+                          return <td key={`empty-${dayIndex}`} className="h-24 border border-tplus-border bg-slate-50/50"></td>;
+                        }
+
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const isSelected = selectedDates.includes(dateStr);
+                        
+                        // Find all holidays for this day
+                        const holidaysForDay = Object.entries(holidays[dateStr] || {});
+
+                        return (
+                          <td 
+                            key={day} 
+                            onClick={() => isAdmin && toggleDateSelection(day)}
+                            className={`h-24 p-1.5 border border-tplus-border align-top relative transition-colors ${
+                              isSelected ? 'bg-tplus-orange/20' : 
+                              isAdmin && selectedEmployee ? 'cursor-pointer hover:bg-slate-50' : ''
+                            }`}
+                          >
+                            <div className={`text-sm font-medium ${new Date().toDateString() === new Date(year, month, day).toDateString() ? 'text-tplus-orange font-bold' : 'text-slate-600'}`}>
+                              {day}
+                            </div>
+                            <div className="mt-1 space-y-1 text-xs">
+                              {holidaysForDay.map(([uid, holiday]) => (
+                                <div 
+                                  key={uid}
+                                  className={`p-1 rounded text-white flex justify-between items-center ${
+                                    holiday.type === 'หยุด' ? 'bg-cyan-500' :
+                                    holiday.type === 'WDF' ? 'bg-green-500' :
+                                    holiday.type === 'ลาป่วย' ? 'bg-red-500' :
+                                    'bg-purple-500'
+                                  }`}
+                                >
+                                  <span>{employees.find(e => e.uid === uid)?.name || holiday.employeeName}</span>
+                                  {isAdmin && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteHoliday(dateStr, uid, holiday.type);
+                                      }}
+                                      className="ml-1 opacity-75 hover:opacity-100"
+                                    >
+                                      <i className='bx bx-x-circle'></i>
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+      </div>
 
       {/* Confirm Modal */}
       {showConfirmModal && (
@@ -430,6 +478,46 @@ const HolidayCalendar = ({ appUser }) => {
                 <i className='bx bx-x mr-2'></i>
                 ยกเลิก
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center border-b border-tplus-border pb-4 mb-4">
+              <h2 className="text-xl font-bold text-tplus-text">
+                ประวัติการแก้ไข - {monthNames[month]} {year + 543}
+              </h2>
+              <button
+                onClick={() => setShowHistoryModal(false)}
+                className="p-2 rounded-full hover:bg-slate-100"
+              >
+                <i className='bx bx-x text-2xl text-slate-600'></i>
+              </button>
+            </div>
+            <div className="overflow-y-auto">
+              {holidayHistory.length > 0 ? (
+                <ul className="space-y-3">
+                  {holidayHistory.map(log => (
+                    <li key={log.id} className="p-3 bg-slate-50 rounded-lg border border-tplus-border text-sm">
+                      <p>
+                        <strong className={log.action === 'set' ? 'text-green-600' : 'text-red-600'}>
+                          {log.action === 'set' ? 'เพิ่ม' : 'ลบ'}
+                        </strong>
+                        วันหยุด <span className="font-semibold">{log.type}</span> ให้กับ <span className="font-semibold">{log.employeeName}</span>
+                      </p>
+                      <p className="text-slate-500 text-xs mt-1">
+                        โดย {log.adminName} เมื่อ {new Date(log.timestamp).toLocaleString('th-TH')}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-center text-slate-500 py-8">ไม่มีประวัติการแก้ไขในเดือนนี้</p>
+              )}
             </div>
           </div>
         </div>

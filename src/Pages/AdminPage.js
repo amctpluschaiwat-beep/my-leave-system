@@ -251,11 +251,17 @@ const AdminPage = ({ appUser }) => {
                 <tr key={user.uid} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <img
-                        src={user.profileImageUrl || 'https://via.placeholder.com/40'}
-                        alt="profile"
-                        className="h-10 w-10 rounded-full mr-3 object-cover"
-                      />
+                      {user.profileImageUrl ? (
+                        <img
+                          src={user.profileImageUrl}
+                          alt="profile"
+                          className="h-10 w-10 rounded-full mr-3 object-cover"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full mr-3 bg-slate-200 flex items-center justify-center">
+                          <i className='bx bxs-user text-xl text-slate-500'></i>
+                        </div>
+                      )}
                       <div className="font-medium text-gray-900">{user.name}</div>
                     </div>
                   </td>

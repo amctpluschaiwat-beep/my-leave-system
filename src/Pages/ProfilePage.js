@@ -10,6 +10,10 @@ const ProfilePage = ({ appUser, viewUserId, viewMode = false }) => {
   const targetUserId = viewMode ? viewUserId : auth.currentUser?.uid;
   const [targetUser, setTargetUser] = useState(null);
   
+  // New state for editable fields
+  const [name, setName] = useState('');
+  const [nationalId, setNationalId] = useState('');
+  const [dob, setDob] = useState('');
   const [position, setPosition] = useState('');
   const [department, setDepartment] = useState('');
   const [imageFile, setImageFile] = useState(null);
@@ -40,6 +44,9 @@ const ProfilePage = ({ appUser, viewUserId, viewMode = false }) => {
         if (snapshot.exists()) {
           const userData = snapshot.val();
           setTargetUser({ uid: targetUserId, ...userData });
+          setName(userData.name || '');
+          setNationalId(userData.nationalId || '');
+          setDob(userData.dob || '');
           setPosition(userData.position || '');
           setDepartment(userData.department || '');
           setCanEdit(false); // HR/Manager ไม่สามารถแก้ไขได้
@@ -47,6 +54,9 @@ const ProfilePage = ({ appUser, viewUserId, viewMode = false }) => {
       });
     } else if (appUser) {
       setTargetUser(appUser);
+      setName(appUser.name || '');
+      setNationalId(appUser.nationalId || '');
+      setDob(appUser.dob || '');
       setPosition(appUser.position || '');
       setDepartment(appUser.department || '');
       setCanEdit((appUser.profileEditedTimes ?? 0) === 0);
@@ -131,6 +141,9 @@ const ProfilePage = ({ appUser, viewUserId, viewMode = false }) => {
 
     try {
       await update(userRef, {
+        name: name,
+        nationalId: nationalId,
+        dob: dob,
         position: position,
         department: department,
         profileEditedTimes: 1 
@@ -280,12 +293,19 @@ const ProfilePage = ({ appUser, viewUserId, viewMode = false }) => {
       <div className="md:col-span-1">
         <div className="bg-white p-6 rounded-lg shadow-md text-center">
           
-          <img 
-            src={targetUser?.profileImageUrl || 'https://via.placeholder.com/150'}
-            alt="Profile"
-            // ⬇️ เปลี่ยนสีเส้นขอบเป็น indigo
-            className="w-40 h-40 rounded-full mx-auto object-cover mb-4 border-4 border-indigo-200"
-          />
+          <div className="w-40 h-40 rounded-full mx-auto mb-4 border-4 border-indigo-200 flex items-center justify-center bg-gray-100">
+            {targetUser?.profileImageUrl ? (
+              <img 
+                src={targetUser.profileImageUrl}
+                alt="Profile"
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+                <i className='bx bxs-user text-7xl'></i>
+              </div>
+            )}
+          </div>
           
           {/* ⬇️ เปลี่ยนสี text เป็น slate */}
           <h3 className="text-xl font-semibold text-slate-800">{targetUser?.name}</h3>
@@ -339,7 +359,7 @@ const ProfilePage = ({ appUser, viewUserId, viewMode = false }) => {
             {/* ... (ส่วน input ที่ readOnly เหมือนเดิม) ... */}
             <div>
               <label className="block text-sm font-medium text-gray-500">ชื่อ-นามสกุล</label>
-              <input type="text" value={targetUser?.name} readOnly className="w-full border-gray-200 bg-gray-100 rounded-md py-2 px-4 mt-1" />
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} disabled={!canEdit || loading} className={`w-full border rounded-md py-2 px-4 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${canEdit ? 'border-gray-300' : 'border-gray-200 bg-gray-100'}`} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">อีเมล</label>
@@ -347,11 +367,11 @@ const ProfilePage = ({ appUser, viewUserId, viewMode = false }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">เลขบัตรประชาชน</label>
-              <input type="text" value={targetUser?.nationalId || '-'} readOnly className="w-full border-gray-200 bg-gray-100 rounded-md py-2 px-4 mt-1" />
+              <input type="text" value={nationalId} onChange={(e) => setNationalId(e.target.value)} disabled={!canEdit || loading} className={`w-full border rounded-md py-2 px-4 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${canEdit ? 'border-gray-300' : 'border-gray-200 bg-gray-100'}`} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-500">วันเกิด</label>
-              <input type="date" value={targetUser?.dob} readOnly className="w-full border-gray-200 bg-gray-100 rounded-md py-2 px-4 mt-1" />
+              <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} disabled={!canEdit || loading} className={`w-full border rounded-md py-2 px-4 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${canEdit ? 'border-gray-300' : 'border-gray-200 bg-gray-100'}`} />
             </div>
             
             <hr className="md:col-span-2 my-2" />

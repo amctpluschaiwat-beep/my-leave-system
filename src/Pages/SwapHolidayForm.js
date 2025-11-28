@@ -4,6 +4,7 @@ import { db } from '../config/firebase';
 
 const SwapHolidayForm = ({ appUser }) => {
   const [employeeHolidays, setEmployeeHolidays] = useState({});
+  const [hasNoHolidays, setHasNoHolidays] = useState(false);
   const [selectedOriginalDate, setSelectedOriginalDate] = useState('');
   const [swapDate, setSwapDate] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -19,6 +20,7 @@ const SwapHolidayForm = ({ appUser }) => {
 
     const holidaysRef = ref(db, `holidays/${appUser.department}`);
     const unsubscribe = onValue(holidaysRef, (snapshot) => {
+      let foundHolidays = false;
       if (snapshot.exists()) {
         const allHolidays = snapshot.val();
         // Filter only this employee's holidays
@@ -26,10 +28,12 @@ const SwapHolidayForm = ({ appUser }) => {
         Object.entries(allHolidays).forEach(([date, employees]) => {
           if (employees[appUser.uid]) {
             myHolidays[date] = employees[appUser.uid];
+            foundHolidays = true;
           }
         });
         setEmployeeHolidays(myHolidays);
       }
+      setHasNoHolidays(!foundHolidays);
     });
 
     return () => unsubscribe();
@@ -141,6 +145,20 @@ const SwapHolidayForm = ({ appUser }) => {
           </div>
         </div>
       </div>
+
+      {hasNoHolidays && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg shadow-md mb-8">
+          <div className="flex items-center">
+            <i className='bx bx-info-circle text-3xl text-yellow-600 mr-4'></i>
+            <div>
+              <h3 className="text-lg font-bold text-yellow-800">ไม่พบวันหยุดที่สามารถสลับได้</h3>
+              <p className="text-yellow-700 mt-1">
+                ระบบไม่พบข้อมูลวันหยุดที่ถูกจัดไว้สำหรับคุณ หากคุณต้องการสลับวันหยุด กรุณาติดต่อผู้จัดการหรือฝ่ายบุคคลเพื่อทำการจัดวันหยุดให้ก่อน
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8 border border-blue-100">
@@ -322,6 +340,13 @@ const SwapHolidayForm = ({ appUser }) => {
 
             {/* Calendar Grid */}
             <div className="mb-6">
+              {
+                !Object.keys(employeeHolidays).some(dateStr => dateStr.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`)) && (
+                  <div className="text-center p-6 bg-yellow-50 rounded-lg border border-yellow-200 mb-4">
+                    <p className="font-semibold text-yellow-800">ไม่พบวันหยุดในเดือน {monthNames[month]}</p>
+                  </div>
+                )
+              }
               {/* Day Names */}
               <div className="grid grid-cols-7 gap-2 mb-4">
                 {dayNames.map((day, i) => (

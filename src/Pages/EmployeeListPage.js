@@ -303,11 +303,17 @@ const EmployeeListPage = ({ appUser }) => {
                   <tr key={employee.uid} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <img
-                          src={employee.profileImageUrl || 'https://via.placeholder.com/40'}
-                          alt="profile"
-                          className="h-10 w-10 rounded-full mr-3 object-cover"
-                        />
+                        {employee.profileImageUrl ? (
+                          <img
+                            src={employee.profileImageUrl}
+                            alt="profile"
+                            className="h-10 w-10 rounded-full mr-3 object-cover"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full mr-3 bg-slate-200 flex items-center justify-center">
+                            <i className='bx bxs-user text-xl text-slate-500'></i>
+                          </div>
+                        )}
                         <div>
                           <div className="font-medium text-gray-900">{employee.name}</div>
                           <div className="text-sm text-gray-500">{employee.email}</div>

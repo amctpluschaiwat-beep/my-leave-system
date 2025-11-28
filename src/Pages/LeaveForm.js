@@ -147,257 +147,233 @@ function LeaveForm({ appUser }) {
   const totalDays = calcTotalDays(startDate, endDate);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-4 shadow-lg">
-            <i className='bx bx-calendar-check text-4xl text-white'></i>
+    <div className="max-w-4xl mx-auto">
+      {/* Page Header */}
+      <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-tplus-orange mb-6">
+        <h1 className="text-2xl font-bold text-tplus-text">ยื่นคำขอลา</h1>
+        <p className="text-slate-500 mt-1">กรอกข้อมูลการลาของคุณให้ครบถ้วนและถูกต้อง</p>
+      </div>
+
+      {/* Alert Messages */}
+      {error && (
+        <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm">
+          <div className="flex items-center">
+            <i className='bx bx-error-circle text-2xl text-red-500 mr-3'></i>
+            <p className="text-red-700 font-medium">{error}</p>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-            แจ้งลางาน
-          </h1>
-          <p className="text-gray-600">กรอกข้อมูลการลาของคุณให้ครบถ้วน</p>
+        </div>
+      )}
+      
+      {success && (
+        <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-md shadow-sm">
+          <div className="flex items-center">
+            <i className='bx bx-check-circle text-2xl text-green-500 mr-3'></i>
+            <p className="text-green-700 font-medium">{success}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Main Form */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-tplus-border">
+        <div className="p-6 border-b border-tplus-border bg-slate-50/50">
+          <h2 className="text-xl font-bold text-tplus-text flex items-center">
+            <i className='bx bx-edit text-2xl mr-3 text-slate-600'></i>
+            ฟอร์มยื่นคำขอลา
+          </h2>
+          <p className="text-slate-500 mt-1 text-sm">ผู้ยื่นคำขอ: {appUser?.name} ({appUser?.department})</p>
         </div>
 
-        {/* Alert Messages */}
-        {error && (
-          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md animate-shake">
-            <div className="flex items-center">
-              <i className='bx bx-error-circle text-2xl text-red-500 mr-3'></i>
-              <p className="text-red-700 font-medium">{error}</p>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Leave Type Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              1. ประเภทการลา
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {leaveTypes.map((type) => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setLeaveType(type.value)}
+                  className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                    leaveType === type.value
+                      ? 'border-tplus-orange bg-tplus-orange/10 shadow-sm'
+                      : 'border-tplus-border hover:border-tplus-orange/50 hover:bg-tplus-orange/5'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">{type.icon}</span>
+                    <span className={`font-medium ${leaveType === type.value ? 'text-tplus-orange' : 'text-slate-700'}`}>
+                      {type.value}
+                    </span>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
-        )}
-        
-        {success && (
-          <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-md animate-slide-in">
-            <div className="flex items-center">
-              <i className='bx bx-check-circle text-2xl text-green-500 mr-3'></i>
-              <p className="text-green-700 font-medium">{success}</p>
-            </div>
-          </div>
-        )}
 
-        {/* Main Form */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-6">
-            <h2 className="text-2xl font-bold text-white flex items-center">
-              <i className='bx bx-edit text-3xl mr-3'></i>
-              ฟอร์มยื่นคำขอลา
-            </h2>
-            <p className="text-blue-100 mt-1">ผู้ยื่นคำขอ: {appUser?.name} ({appUser?.department})</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
-            {/* Leave Type Selection */}
+          {/* Date Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                <i className='bx bx-list-ul mr-2'></i>
-                ประเภทการลา
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                2. วันที่เริ่มต้น
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {leaveTypes.map((type) => (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => setLeaveType(type.value)}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                      leaveType === type.value
-                        ? 'border-sky-500 bg-sky-50 shadow-md scale-105'
-                        : 'border-gray-200 hover:border-sky-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <span className="text-3xl mr-3">{type.icon}</span>
-                      <span className={`font-medium ${leaveType === type.value ? 'text-sky-700' : 'text-gray-700'}`}>
-                        {type.value}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Date Range */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <i className='bx bx-calendar mr-2'></i>
-                  วันที่เริ่มต้น
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <i className='bx bx-calendar-check mr-2'></i>
-                  วันที่สิ้นสุด
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Time Range (for half-day) */}
-            {isHalfDayLeave() && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <i className='bx bx-time mr-2'></i>
-                    เวลาเริ่มต้น (สำหรับลาครึ่งวัน)
-                  </label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    <i className='bx bx-time-five mr-2'></i>
-                    เวลาสิ้นสุด (สำหรับลาครึ่งวัน)
-                  </label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 transition-all"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Total Days Display */}
-            {startDate && endDate && (
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-xl border border-sky-200">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-700 font-medium">
-                    <i className='bx bx-calendar-alt mr-2'></i>
-                    จำนวนวันลา
-                  </span>
-                  <span className="text-2xl font-bold text-sky-600">
-                    {totalDays} วัน
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Reason */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <i className='bx bx-message-detail mr-2'></i>
-                เหตุผลในการลา
-              </label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={4}
-                placeholder="กรุณาระบุเหตุผลในการลา..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all resize-none"
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-tplus-orange focus:ring-1 focus:ring-tplus-orange transition-all"
                 required
               />
             </div>
-
-            {/* File Attachment */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <i className='bx bx-image mr-2'></i>
-                แนบไฟล์ภาพ (ถ้ามี)
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                3. วันที่สิ้นสุด
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-sky-400 transition-all">
-                {!filePreview ? (
-                  <div className="text-center">
-                    <i className='bx bx-cloud-upload text-5xl text-gray-400 mb-2'></i>
-                    <p className="text-gray-600 mb-3">อัปโหลดไฟล์ .png หรือ .jpeg (ไม่เกิน 5MB)</p>
-                    <label className="inline-block bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-6 rounded-lg cursor-pointer transition-all">
-                      <i className='bx bx-upload mr-2'></i>
-                      เลือกไฟล์
-                      <input
-                        type="file"
-                        accept=".png,.jpg,.jpeg"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <img src={filePreview} alt="Preview" className="max-h-64 mx-auto rounded-lg shadow-md" />
-                    <button
-                      type="button"
-                      onClick={removeFile}
-                      className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-all"
-                    >
-                      <i className='bx bx-x text-xl'></i>
-                    </button>
-                    <p className="text-center text-sm text-gray-600 mt-2">
-                      {attachedFile?.name}
-                    </p>
-                  </div>
-                )}
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-tplus-orange focus:ring-1 focus:ring-tplus-orange transition-all"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Time Range (for half-day) */}
+          {isHalfDayLeave() && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  เวลาเริ่มต้น (สำหรับลาครึ่งวัน)
+                </label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  เวลาสิ้นสุด (สำหรับลาครึ่งวัน)
+                </label>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all"
+                />
               </div>
             </div>
+          )}
 
-            {/* Submit Button */}
-            <div className="flex gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className={`flex-1 py-4 px-6 rounded-xl font-semibold text-white shadow-lg transition-all duration-600 ease-in-out ${
-                  loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-700 hover:bg-blue-800 hover:shadow-2xl transform hover:scale-[1.01]'
-                }`}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <i className='bx bx-loader-alt animate-spin text-xl mr-2'></i>
-                    กำลังส่งคำขอ...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center">
-                    <i className='bx bx-send text-xl mr-2'></i>
-                    ส่งคำขอลา
-                  </span>
-                )}
-              </button>
+          {/* Total Days Display */}
+          {startDate && endDate && (
+            <div className="bg-slate-50 p-4 rounded-lg border border-tplus-border">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-600 font-medium">
+                  รวมจำนวนวันลา
+                </span>
+                <span className="text-xl font-bold text-tplus-text">
+                  {totalDays} วัน
+                </span>
+              </div>
             </div>
-          </form>
-        </div>
+          )}
 
-        {/* Info Card */}
-        <div className="mt-6 bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
-          <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-            <i className='bx bx-info-circle text-xl mr-2 text-blue-500'></i>
-            ข้อมูลสำคัญ
-          </h3>
-          <ul className="space-y-2 text-sm text-gray-600">
-            <li className="flex items-start">
-              <i className='bx bx-check text-green-500 mr-2 mt-0.5'></i>
-              คำขอลาจะถูกส่งไปยังผู้จัดการเพื่ออนุมัติ
-            </li>
-            <li className="flex items-start">
-              <i className='bx bx-check text-green-500 mr-2 mt-0.5'></i>
-              สำหรับการลาครึ่งวัน กรุณาระบุช่วงเวลาด้วย
-            </li>
-            <li className="flex items-start">
-              <i className='bx bx-check text-green-500 mr-2 mt-0.5'></i>
-              คุณสามารถตรวจสอบสถานะคำขอได้ที่หน้า Dashboard
-            </li>
-          </ul>
-        </div>
+          {/* Reason */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              4. เหตุผลในการลา
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+              placeholder="กรุณาระบุเหตุผลในการลา..."
+              className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-tplus-orange focus:ring-1 focus:ring-tplus-orange transition-all resize-none"
+              required
+            />
+          </div>
+
+          {/* File Attachment */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              5. แนบไฟล์ (ถ้ามี)
+            </label>
+            <div className="border-2 border-dashed border-tplus-border rounded-lg p-6 text-center hover:border-tplus-orange/50 transition-all">
+              {!filePreview ? (
+                <>
+                  <i className='bx bx-cloud-upload text-4xl text-slate-400 mb-2'></i>
+                  <p className="text-slate-500 text-sm mb-3">.png หรือ .jpeg (ไม่เกิน 5MB)</p>
+                  <label className="inline-block bg-white hover:bg-slate-50 border border-tplus-border text-slate-700 font-semibold py-2 px-4 rounded-lg cursor-pointer transition-all text-sm">
+                    <i className='bx bx-upload mr-2'></i>
+                    เลือกไฟล์
+                    <input
+                      type="file"
+                      accept=".png,.jpg,.jpeg"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </>
+              ) : (
+                <div className="relative inline-block">
+                  <img src={filePreview} alt="Preview" className="max-h-48 mx-auto rounded-lg shadow-sm border border-tplus-border" />
+                  <button
+                    type="button"
+                    onClick={removeFile}
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md transition-all"
+                  >
+                    <i className='bx bx-x text-lg'></i>
+                  </button>
+                  <p className="text-center text-xs text-slate-500 mt-2 truncate max-w-xs">
+                    {attachedFile?.name}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-3 px-6 rounded-lg font-semibold text-white shadow-md transition-all duration-300 ${
+                loading
+                  ? 'bg-slate-400 cursor-not-allowed'
+                  : 'bg-tplus-orange hover:bg-orange-600'
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <i className='bx bx-loader-alt animate-spin text-xl mr-2'></i>
+                  กำลังส่งคำขอ...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <i className='bx bx-send text-xl mr-2'></i>
+                  ส่งคำขอลา
+                </span>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Info Card */}
+      <div className="mt-6 bg-white rounded-xl shadow-sm p-6 border-l-4 border-tplus-orange">
+        <h3 className="font-semibold text-tplus-text mb-2 flex items-center">
+          <i className='bx bx-info-circle text-xl mr-2 text-tplus-orange'></i>
+          ข้อมูลสำคัญ
+        </h3>
+        <ul className="space-y-1 text-sm text-slate-600 list-disc list-inside">
+          <li>คำขอลาจะถูกส่งไปยังผู้จัดการเพื่ออนุมัติ</li>
+          <li>สำหรับการลาครึ่งวัน กรุณาระบุช่วงเวลาด้วย</li>
+          <li>คุณสามารถตรวจสอบสถานะคำขอได้ที่หน้า Dashboard</li>
+        </ul>
       </div>
     </div>
   );

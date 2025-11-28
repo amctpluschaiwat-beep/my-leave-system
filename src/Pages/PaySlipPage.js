@@ -152,293 +152,262 @@ function PaySlipPage({ appUser }) {
     }
 
     return (
-        <div className="p-6">
-            <div className="bg-white shadow-sm rounded-lg p-6 mb-6">
-                <div className="flex items-center justify-between mb-6">
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-tplus-orange">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-800">สลิปเงินเดือน</h2>
-                        <p className="text-gray-600 mt-1">รายการสลิปเงินเดือนของคุณ</p>
+                        <h2 className="text-2xl font-bold text-tplus-text">สลิปเงินเดือน</h2>
+                        <p className="text-slate-500 mt-1">รายการสลิปเงินเดือนของคุณ</p>
                     </div>
-                    <div className="text-right">
-                        <p className="text-sm text-gray-500">พนักงาน</p>
-                        <p className="font-semibold text-gray-800">{appUser?.name}</p>
-                        <p className="text-sm text-gray-600">{appUser?.department}</p>
+                    <div className="text-left sm:text-right mt-4 sm:mt-0">
+                        <p className="text-sm text-slate-500">พนักงาน</p>
+                        <p className="font-semibold text-tplus-text">{appUser?.name}</p>
+                        <p className="text-sm text-slate-500">{appUser?.department}</p>
                     </div>
                 </div>
-                
-                {payslips.length === 0 ? (
-                    <div className="text-center p-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                        <i className='bx bx-file text-6xl text-gray-400 mb-4'></i>
-                        <p className="text-gray-600 text-lg">ไม่พบข้อมูลสลิปเงินเดือน</p>
-                        <p className="text-gray-500 text-sm mt-2">ข้อมูลจะปรากฏเมื่อแผนกบุคคลทำการออกสลิป</p>
-                        <button
-                            onClick={handleAddSampleData}
-                            className="mt-6 px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto"
-                        >
-                            <i className='bx bx-plus-circle text-xl'></i>
-                            เพิ่มข้อมูลตัวอย่าง (Demo)
-                        </button>
-                    </div>
-                ) : (
-                    <>
-                        {/* Rows per page selector */}
-                        <div className="mb-4 flex items-center gap-2 pb-4 border-b border-gray-200">
-                            <span className="text-sm text-gray-600 font-medium">แสดง:</span>
+            </div>
+            
+            {payslips.length === 0 ? (
+                <div className="text-center p-12 bg-white rounded-xl shadow-sm border border-tplus-border">
+                    <i className='bx bx-file text-6xl text-slate-300 mb-4'></i>
+                    <p className="text-tplus-text text-lg">ไม่พบข้อมูลสลิปเงินเดือน</p>
+                    <p className="text-slate-500 text-sm mt-2">ข้อมูลจะปรากฏเมื่อแผนกบุคคลทำการออกสลิป</p>
+                    <button
+                        onClick={handleAddSampleData}
+                        className="mt-6 px-5 py-2.5 bg-tplus-orange hover:bg-orange-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto shadow-sm"
+                    >
+                        <i className='bx bx-plus-circle text-lg'></i>
+                        เพิ่มข้อมูลตัวอย่าง (Demo)
+                    </button>
+                </div>
+            ) : (
+                <div className="bg-white rounded-xl shadow-sm border border-tplus-border">
+                    {/* Rows per page selector */}
+                    <div className="p-4 border-b border-tplus-border flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-600">แสดง:</span>
                             {[10, 50, 100].map((num) => (
                                 <button
                                     key={num}
-                                    onClick={() => {
-                                        setRowsPerPage(num);
-                                        setCurrentPage(1);
-                                    }}
+                                    onClick={() => { setRowsPerPage(num); setCurrentPage(1); }}
                                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                                         rowsPerPage === num
-                                            ? 'bg-gray-800 text-white'
-                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                                            ? 'bg-tplus-orange text-white'
+                                            : 'bg-white text-slate-700 border border-tplus-border hover:bg-slate-100'
                                     }`}
                                 >
                                     {num}
                                 </button>
                             ))}
-                            <span className="text-sm text-gray-600">รายการ</span>
+                            <span className="text-sm text-slate-600">รายการ</span>
                         </div>
+                        <div className="text-sm text-slate-600 font-medium">
+                            หน้า {currentPage} / {Math.ceil(payslips.length / rowsPerPage) || 1}
+                        </div>
+                    </div>
 
-                        {/* PaySlip List */}
-                        <div className="space-y-3">
-                            {(() => {
-                                const startIndex = (currentPage - 1) * rowsPerPage;
-                                const endIndex = startIndex + rowsPerPage;
-                                const paginatedSlips = payslips.slice(startIndex, endIndex);
-                                
-                                return paginatedSlips.map((slip) => (
-                                    <div 
-                                        key={slip.id} 
-                                        className="border border-gray-300 rounded-lg hover:shadow-md transition-shadow bg-white"
-                                    >
-                                        <div className="p-4 flex justify-between items-center">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center text-white">
-                                                        <i className='bx bx-receipt text-2xl'></i>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-lg font-bold text-gray-800">
-                                                            งวดเดือน {slip.month} พ.ศ. {slip.year}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            วันที่จ่าย: {new Date(slip.payDate).toLocaleDateString('th-TH', { 
-                                                                year: 'numeric', 
-                                                                month: 'long', 
-                                                                day: 'numeric' 
-                                                            })}
-                                                        </p>
-                                                    </div>
+                    {/* PaySlip List */}
+                    <div className="divide-y divide-tplus-border">
+                        {(() => {
+                            const startIndex = (currentPage - 1) * rowsPerPage;
+                            const endIndex = startIndex + rowsPerPage;
+                            const paginatedSlips = payslips.slice(startIndex, endIndex);
+                            
+                            return paginatedSlips.map((slip) => (
+                                <div 
+                                    key={slip.id} 
+                                    className="p-4 hover:bg-slate-50/50 transition-colors"
+                                >
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-tplus-orange/10 rounded-lg flex items-center justify-center text-tplus-orange border border-tplus-orange/20">
+                                                    <i className='bx bx-receipt text-2xl'></i>
+                                                </div>
+                                                <div>
+                                                    <p className="text-md font-bold text-tplus-text">
+                                                        งวดเดือน {slip.month} พ.ศ. {slip.year}
+                                                    </p>
+                                                    <p className="text-sm text-slate-500">
+                                                        วันที่จ่าย: {new Date(slip.payDate).toLocaleDateString('th-TH', { 
+                                                            year: 'numeric', month: 'long', day: 'numeric' 
+                                                        })}
+                                                    </p>
                                                 </div>
                                             </div>
-                                            <div className="text-right mr-6">
-                                                <p className="text-xs text-gray-500 mb-1">เงินเดือนสุทธิ</p>
-                                                <p className="text-2xl font-bold text-green-700">
-                                                    ฿{formatCurrency(slip.netPay)}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={() => handleViewDetail(slip)}
-                                                className="px-6 py-2.5 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-                                            >
-                                                <i className='bx bx-show'></i>
-                                                ดูรายละเอียด
-                                            </button>
                                         </div>
+                                        <div className="text-left sm:text-right">
+                                            <p className="text-xs text-slate-500 mb-1">เงินเดือนสุทธิ</p>
+                                            <p className="text-xl font-bold text-green-600">
+                                                ฿{formatCurrency(slip.netPay)}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleViewDetail(slip)}
+                                            className="px-4 py-2 bg-white border border-tplus-border text-slate-700 rounded-lg font-medium transition-colors hover:bg-slate-100 hover:border-slate-300 flex items-center justify-center gap-2 w-full sm:w-auto"
+                                        >
+                                            <i className='bx bx-show'></i>
+                                            <span>ดูรายละเอียด</span>
+                                        </button>
                                     </div>
-                                ));
-                            })()}
-                        </div>
+                                </div>
+                            ));
+                        })()}
+                    </div>
 
-                        {/* Pagination */}
-                        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-between">
-                            <div className="text-sm text-gray-600">
-                                แสดง {Math.min((currentPage - 1) * rowsPerPage + 1, payslips.length)} - {Math.min(currentPage * rowsPerPage, payslips.length)} จาก {payslips.length} รายการ
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                    disabled={currentPage === 1}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                        currentPage === 1
-                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <i className='bx bx-chevron-left'></i>
-                                </button>
-                                <span className="px-4 py-2 text-sm text-gray-700 font-medium">
-                                    หน้า {currentPage} / {Math.ceil(payslips.length / rowsPerPage)}
-                                </span>
-                                <button
-                                    onClick={() => setCurrentPage(prev => Math.min(Math.ceil(payslips.length / rowsPerPage), prev + 1))}
-                                    disabled={currentPage >= Math.ceil(payslips.length / rowsPerPage)}
-                                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                        currentPage >= Math.ceil(payslips.length / rowsPerPage)
-                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <i className='bx bx-chevron-right'></i>
-                                </button>
-                            </div>
+                    {/* Pagination */}
+                    <div className="p-4 border-t border-tplus-border flex items-center justify-between flex-wrap gap-2">
+                        <div className="text-sm text-slate-600">
+                            แสดง {Math.min((currentPage - 1) * rowsPerPage + 1, payslips.length)} - {Math.min(currentPage * rowsPerPage, payslips.length)} จาก {payslips.length} รายการ
                         </div>
-                    </>
-                )}
-            </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1 rounded-md text-sm font-medium bg-white border border-tplus-border text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                            >
+                                <i className='bx bx-chevron-left'></i>
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(payslips.length / rowsPerPage), prev + 1))}
+                                disabled={currentPage >= Math.ceil(payslips.length / rowsPerPage)}
+                                className="px-3 py-1 rounded-md text-sm font-medium bg-white border border-tplus-border text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                            >
+                                <i className='bx bx-chevron-right'></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal - PaySlip Detail */}
             {showModal && selectedSlip && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                         {/* Modal Header */}
-                        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-                            <h3 className="text-2xl font-bold text-gray-800">
+                        <div className="sticky top-0 bg-white border-b border-tplus-border p-6 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-tplus-text">
                                 สลิปเงินเดือน - {selectedSlip.month} {selectedSlip.year}
                             </h3>
                             <button
                                 onClick={() => setShowModal(false)}
-                                className="text-gray-500 hover:text-gray-800 text-2xl font-bold w-8 h-8 flex items-center justify-center"
+                                className="text-slate-400 hover:text-slate-700 text-3xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
                             >
                                 ×
                             </button>
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="p-6 bg-gray-50 border-b border-gray-200 flex gap-2 flex-wrap">
+                        <div className="p-4 bg-slate-50/50 border-b border-tplus-border grid grid-cols-2 sm:grid-cols-4 gap-2">
                             <button
                                 onClick={handlePrint}
-                                className="flex-1 min-w-[150px] px-4 py-3 bg-white border-2 border-gray-800 text-gray-800 rounded-lg font-medium hover:bg-gray-800 hover:text-white transition-colors flex items-center justify-center gap-2"
+                                className="px-4 py-2.5 bg-white border border-tplus-border text-slate-700 rounded-lg font-medium hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 text-sm"
                             >
-                                <i className='bx bx-printer text-xl'></i>
-                                พิมพ์
+                                <i className='bx bx-printer text-lg'></i>
+                                <span>พิมพ์</span>
                             </button>
                             <button
                                 onClick={handleExportPDF}
-                                className="flex-1 min-w-[150px] px-4 py-3 bg-white border-2 border-gray-800 text-gray-800 rounded-lg font-medium hover:bg-gray-800 hover:text-white transition-colors flex items-center justify-center gap-2"
+                                className="px-4 py-2.5 bg-white border border-tplus-border text-slate-700 rounded-lg font-medium hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 text-sm"
                             >
-                                <i className='bx bxs-file-pdf text-xl'></i>
-                                Export PDF
+                                <i className='bx bxs-file-pdf text-lg'></i>
+                                <span>Export PDF</span>
                             </button>
                             <button
                                 onClick={handleSendEmail}
-                                className="flex-1 min-w-[150px] px-4 py-3 bg-white border-2 border-gray-800 text-gray-800 rounded-lg font-medium hover:bg-gray-800 hover:text-white transition-colors flex items-center justify-center gap-2"
+                                className="px-4 py-2.5 bg-white border border-tplus-border text-slate-700 rounded-lg font-medium hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 text-sm"
                             >
-                                <i className='bx bx-envelope text-xl'></i>
-                                ส่ง Email
+                                <i className='bx bx-envelope text-lg'></i>
+                                <span>ส่ง Email</span>
                             </button>
                             <button
                                 onClick={handleDigitalSign}
-                                className="flex-1 min-w-[150px] px-4 py-3 bg-white border-2 border-gray-800 text-gray-800 rounded-lg font-medium hover:bg-gray-800 hover:text-white transition-colors flex items-center justify-center gap-2"
+                                className="px-4 py-2.5 bg-white border border-tplus-border text-slate-700 rounded-lg font-medium hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 text-sm"
                             >
-                                <i className='bx bx-edit-alt text-xl'></i>
-                                ลายเซ็นดิจิทัล
+                                <i className='bx bx-edit-alt text-lg'></i>
+                                <span>ลายเซ็นดิจิทัล</span>
                             </button>
                         </div>
 
                         {/* PaySlip Content for Print */}
-                        <div ref={printRef} className="p-6" style={{ maxWidth: '210mm', margin: '0 auto' }}>
-                            {/* Company Header with Logo */}
-                            <div className="border-b-2 border-gray-800 pb-4 mb-4">
-                                <div className="flex items-start gap-4">
-                                    {/* Logo */}
-                                    {companyData?.logoUrl ? (
-                                        <img src={companyData.logoUrl} alt="Logo" className="w-20 h-20 object-contain border border-gray-300 rounded flex-shrink-0" />
-                                    ) : (
-                                        <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <span className="text-white font-bold text-2xl">T+1</span>
-                                        </div>
+                        <div ref={printRef} className="p-6 text-tplus-text" style={{ maxWidth: '210mm', margin: '0 auto' }}>
+                            {/* Company Header */}
+                            <div className="border-b-2 border-slate-400 pb-4 mb-4">
+                                <div className="flex flex-col sm:flex-row items-start gap-4">
+                                    {companyData?.logoUrl && (
+                                        <img src={companyData.logoUrl} alt="Logo" className="w-20 h-20 object-contain border border-tplus-border rounded-md flex-shrink-0" />
                                     )}
-                                    {/* Company Info */}
                                     <div className="flex-1">
-                                        <h1 className="text-xl font-bold text-gray-900">{companyData?.nameTH || 'บริษัท ทีพลัสวัน ลิสซิ่ง จำกัด'}</h1>
-                                        <h2 className="text-base font-semibold text-gray-700">{companyData?.nameEN || 'TPLUSONE LEASING CO., LTD.'}</h2>
-                                        <p className="text-xs text-gray-600 mt-1">{companyData?.address || '1188 หมู่ 4 ตำบลสำโรงเหนือ อำเภอเมือง จังหวัดสมุทรปราการ 10270'}</p>
-                                        <p className="text-xs text-gray-600">เลขประจำตัวผู้เสียภาษี: {companyData?.taxId || '0115566019276'}</p>
-                                        <p className="text-xs text-gray-600">โทร: {companyData?.phone || '02-096-2677'} | Email: {companyData?.email || 'humanresource.tplus@gmail.com'}</p>
+                                        <h1 className="text-xl font-bold text-tplus-text">{companyData?.nameTH || 'บริษัท ทีพลัสวัน ลิสซิ่ง จำกัด'}</h1>
+                                        <h2 className="text-base font-semibold text-slate-600">{companyData?.nameEN || 'TPLUSONE LEASING CO., LTD.'}</h2>
+                                        <p className="text-xs text-slate-500 mt-1">{companyData?.address || '1188 หมู่ 4 ตำบลสำโรงเหนือ อำเภอเมือง จังหวัดสมุทรปราการ 10270'}</p>
+                                        <p className="text-xs text-slate-500">เลขประจำตัวผู้เสียภาษี: {companyData?.taxId || '0115566019276'}</p>
                                     </div>
                                 </div>
-                                <h3 className="text-center text-lg font-bold text-gray-900 mt-3">ใบจ่ายเงินเดือน (PAY SLIP)</h3>
+                                <h3 className="text-center text-lg font-bold text-tplus-text mt-3">ใบจ่ายเงินเดือน (PAY SLIP)</h3>
                             </div>
 
                             {/* Employee Info */}
-                            <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-300 text-sm">
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">ชื่อ-นามสกุล (Name)</p>
-                                    <p className="font-semibold text-gray-900">{appUser?.name || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">รหัสพนักงาน (Employee ID)</p>
-                                    <p className="font-semibold text-gray-900">{appUser?.employeeId || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">แผนก (Department)</p>
-                                    <p className="font-semibold text-gray-900">{appUser?.department || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">ตำแหน่ง (Position)</p>
-                                    <p className="font-semibold text-gray-900">{appUser?.position || '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">งวดเดือน (Period)</p>
-                                    <p className="font-semibold text-gray-900">{selectedSlip.month} {selectedSlip.year}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm text-gray-600 mb-1">วันที่จ่าย (Pay Date)</p>
-                                    <p className="font-semibold text-gray-900">
-                                        {new Date(selectedSlip.payDate).toLocaleDateString('th-TH', { 
-                                            year: 'numeric', 
-                                            month: 'long', 
-                                            day: 'numeric' 
-                                        })}
-                                    </p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 pb-4 border-b border-tplus-border text-sm">
+                                <div className="font-semibold text-slate-500">ชื่อ-นามสกุล:</div>
+                                <div className="text-tplus-text">{appUser?.name || '-'}</div>
+                                <div className="font-semibold text-slate-500">รหัสพนักงาน:</div>
+                                <div className="text-tplus-text">{appUser?.employeeId || '-'}</div>
+                                <div className="font-semibold text-slate-500">แผนก:</div>
+                                <div className="text-tplus-text">{appUser?.department || '-'}</div>
+                                <div className="font-semibold text-slate-500">ตำแหน่ง:</div>
+                                <div className="text-tplus-text">{appUser?.position || '-'}</div>
+                                <div className="font-semibold text-slate-500">งวดเดือน:</div>
+                                <div className="text-tplus-text">{selectedSlip.month} {selectedSlip.year}</div>
+                                <div className="font-semibold text-slate-500">วันที่จ่าย:</div>
+                                <div className="text-tplus-text">
+                                    {new Date(selectedSlip.payDate).toLocaleDateString('th-TH', { 
+                                        year: 'numeric', month: 'long', day: 'numeric' 
+                                    })}
                                 </div>
                             </div>
 
                             {/* Income & Deduction Table */}
                             <div className="mb-4">
-                                <table className="w-full border-collapse border border-gray-300 text-sm">
-                                    <thead>
-                                        <tr className="bg-gray-800 text-white">
-                                            <th className="border border-gray-300 p-2 text-left">รายการ (Description)</th>
-                                            <th className="border border-gray-300 p-2 text-right w-28">รายได้ (Income)</th>
-                                            <th className="border border-gray-300 p-2 text-right w-28">รายหัก (Deduction)</th>
+                                <table className="w-full border-collapse border border-tplus-border text-sm">
+                                    <thead className="bg-slate-100">
+                                        <tr className="text-left">
+                                            <th className="border border-tplus-border p-2 font-semibold">รายการ</th>
+                                            <th className="border border-tplus-border p-2 text-right font-semibold w-28">รายได้</th>
+                                            <th className="border border-tplus-border p-2 text-right font-semibold w-28">รายหัก</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td className="border border-gray-300 p-2">เงินเดือนประจำ (Base Salary)</td>
-                                            <td className="border border-gray-300 p-2 text-right">{formatCurrency(selectedSlip.baseSalary || 0)}</td>
-                                            <td className="border border-gray-300 p-2 text-right">-</td>
+                                            <td className="border border-tplus-border p-2">เงินเดือนประจำ</td>
+                                            <td className="border border-tplus-border p-2 text-right">{formatCurrency(selectedSlip.baseSalary || 0)}</td>
+                                            <td className="border border-tplus-border p-2 text-right">-</td>
                                         </tr>
                                         {selectedSlip.overtimePay > 0 && (
                                             <tr>
-                                                <td className="border border-gray-300 p-2">ค่าล่วงเวลา (Overtime)</td>
-                                                <td className="border border-gray-300 p-2 text-right">{formatCurrency(selectedSlip.overtimePay)}</td>
-                                                <td className="border border-gray-300 p-2 text-right">-</td>
+                                                <td className="border border-tplus-border p-2">ค่าล่วงเวลา</td>
+                                                <td className="border border-tplus-border p-2 text-right">{formatCurrency(selectedSlip.overtimePay)}</td>
+                                                <td className="border border-tplus-border p-2 text-right">-</td>
                                             </tr>
                                         )}
                                         {selectedSlip.allowance > 0 && (
                                             <tr>
-                                                <td className="border border-gray-300 p-2">เบี้ยเลี้ยง/ค่าพาหนะ (Allowance)</td>
-                                                <td className="border border-gray-300 p-2 text-right">{formatCurrency(selectedSlip.allowance)}</td>
-                                                <td className="border border-gray-300 p-2 text-right">-</td>
+                                                <td className="border border-tplus-border p-2">เบี้ยเลี้ยง/ค่าพาหนะ</td>
+                                                <td className="border border-tplus-border p-2 text-right">{formatCurrency(selectedSlip.allowance)}</td>
+                                                <td className="border border-tplus-border p-2 text-right">-</td>
                                             </tr>
                                         )}
                                         {selectedSlip.bonus > 0 && (
                                             <tr>
-                                                <td className="border border-gray-300 p-2">โบนัส (Bonus)</td>
-                                                <td className="border border-gray-300 p-2 text-right">{formatCurrency(selectedSlip.bonus)}</td>
-                                                <td className="border border-gray-300 p-2 text-right">-</td>
+                                                <td className="border border-tplus-border p-2">โบนัส</td>
+                                                <td className="border border-tplus-border p-2 text-right">{formatCurrency(selectedSlip.bonus)}</td>
+                                                <td className="border border-tplus-border p-2 text-right">-</td>
                                             </tr>
                                         )}
-                                        <tr className="bg-gray-100 font-semibold">
-                                            <td className="border border-gray-300 p-2">รวมรายได้ (Total Income)</td>
-                                            <td className="border border-gray-300 p-2 text-right">
+                                        <tr className="bg-slate-50 font-semibold">
+                                            <td className="border border-tplus-border p-2">รวมรายได้</td>
+                                            <td className="border border-tplus-border p-2 text-right">
                                                 {formatCurrency(
                                                     (parseFloat(selectedSlip.baseSalary) || 0) + 
                                                     (parseFloat(selectedSlip.overtimePay) || 0) + 
@@ -446,40 +415,40 @@ function PaySlipPage({ appUser }) {
                                                     (parseFloat(selectedSlip.bonus) || 0)
                                                 )}
                                             </td>
-                                            <td className="border border-gray-300 p-2 text-right">-</td>
+                                            <td className="border border-tplus-border p-2 text-right">-</td>
                                         </tr>
                                         {selectedSlip.socialSecurity > 0 && (
                                             <tr>
-                                                <td className="border border-gray-300 p-2">ประกันสังคม (Social Security)</td>
-                                                <td className="border border-gray-300 p-2 text-right">-</td>
-                                                <td className="border border-gray-300 p-2 text-right">{formatCurrency(selectedSlip.socialSecurity)}</td>
+                                                <td className="border border-tplus-border p-2">ประกันสังคม</td>
+                                                <td className="border border-tplus-border p-2 text-right">-</td>
+                                                <td className="border border-tplus-border p-2 text-right">{formatCurrency(selectedSlip.socialSecurity)}</td>
                                             </tr>
                                         )}
                                         {selectedSlip.tax > 0 && (
                                             <tr>
-                                                <td className="border border-gray-300 p-2">ภาษีหัก ณ ที่จ่าย (Tax Withholding)</td>
-                                                <td className="border border-gray-300 p-2 text-right">-</td>
-                                                <td className="border border-gray-300 p-2 text-right">{formatCurrency(selectedSlip.tax)}</td>
+                                                <td className="border border-tplus-border p-2">ภาษีหัก ณ ที่จ่าย</td>
+                                                <td className="border border-tplus-border p-2 text-right">-</td>
+                                                <td className="border border-tplus-border p-2 text-right">{formatCurrency(selectedSlip.tax)}</td>
                                             </tr>
                                         )}
                                         {selectedSlip.loan > 0 && (
                                             <tr>
-                                                <td className="border border-gray-300 p-2">เงินกู้ยืม (Loan Deduction)</td>
-                                                <td className="border border-gray-300 p-2 text-right">-</td>
-                                                <td className="border border-gray-300 p-2 text-right">{formatCurrency(selectedSlip.loan)}</td>
+                                                <td className="border border-tplus-border p-2">เงินกู้ยืม</td>
+                                                <td className="border border-tplus-border p-2 text-right">-</td>
+                                                <td className="border border-tplus-border p-2 text-right">{formatCurrency(selectedSlip.loan)}</td>
                                             </tr>
                                         )}
                                         {selectedSlip.deductions > 0 && (
                                             <tr>
-                                                <td className="border border-gray-300 p-2">รายการหักอื่นๆ (Other Deductions)</td>
-                                                <td className="border border-gray-300 p-2 text-right">-</td>
-                                                <td className="border border-gray-300 p-2 text-right">{formatCurrency(selectedSlip.deductions)}</td>
+                                                <td className="border border-tplus-border p-2">รายการหักอื่นๆ</td>
+                                                <td className="border border-tplus-border p-2 text-right">-</td>
+                                                <td className="border border-tplus-border p-2 text-right">{formatCurrency(selectedSlip.deductions)}</td>
                                             </tr>
                                         )}
-                                        <tr className="bg-gray-100 font-semibold">
-                                            <td className="border border-gray-300 p-2">รวมรายการหัก (Total Deductions)</td>
-                                            <td className="border border-gray-300 p-2 text-right">-</td>
-                                            <td className="border border-gray-300 p-2 text-right">
+                                        <tr className="bg-slate-50 font-semibold">
+                                            <td className="border border-tplus-border p-2">รวมรายการหัก</td>
+                                            <td className="border border-tplus-border p-2 text-right">-</td>
+                                            <td className="border border-tplus-border p-2 text-right">
                                                 {formatCurrency(
                                                     (parseFloat(selectedSlip.socialSecurity) || 0) + 
                                                     (parseFloat(selectedSlip.tax) || 0) + 
@@ -488,9 +457,9 @@ function PaySlipPage({ appUser }) {
                                                 )}
                                             </td>
                                         </tr>
-                                        <tr className="bg-green-50 font-bold text-lg">
-                                            <td className="border border-gray-400 p-4">เงินได้สุทธิ (Net Pay)</td>
-                                            <td className="border border-gray-400 p-4 text-right text-green-700" colSpan="2">
+                                        <tr className="bg-green-50 font-bold text-md">
+                                            <td className="border border-tplus-border p-3">เงินได้สุทธิ</td>
+                                            <td className="border border-tplus-border p-3 text-right text-green-700" colSpan="2">
                                                 ฿{formatCurrency(selectedSlip.netPay)}
                                             </td>
                                         </tr>
@@ -500,36 +469,27 @@ function PaySlipPage({ appUser }) {
 
                             {/* Notes */}
                             {selectedSlip.notes && (
-                                <div className="mb-6 p-4 bg-gray-50 border border-gray-300 rounded">
-                                    <p className="text-sm font-semibold text-gray-700 mb-2">หมายเหตุ (Notes):</p>
-                                    <p className="text-sm text-gray-600">{selectedSlip.notes}</p>
+                                <div className="mb-6 p-3 bg-slate-50 border border-tplus-border rounded-md">
+                                    <p className="text-sm font-semibold text-slate-700 mb-1">หมายเหตุ:</p>
+                                    <p className="text-sm text-slate-600">{selectedSlip.notes}</p>
                                 </div>
                             )}
 
                             {/* Signatures */}
-                            <div className="grid grid-cols-2 gap-8 mt-12 pt-8 border-t border-gray-300">
-                                <div className="text-center">
-                                    <div className="h-16 mb-2"></div>
-                                    <div className="border-t border-gray-800 pt-2">
-                                        <p className="font-semibold text-gray-900">ลงชื่อผู้จ่ายเงิน</p>
-                                        <p className="text-sm text-gray-600">(Authorized Signature)</p>
-                                        <p className="text-sm text-gray-600 mt-2">วันที่: _______________</p>
-                                    </div>
+                            <div className="grid grid-cols-2 gap-8 mt-12 pt-8">
+                                <div className="text-center border-t border-tplus-border pt-2">
+                                    <p className="font-semibold text-tplus-text text-sm">.................................................</p>
+                                    <p className="text-sm text-slate-600 mt-1">(ผู้จ่ายเงิน)</p>
                                 </div>
-                                <div className="text-center">
-                                    <div className="h-16 mb-2"></div>
-                                    <div className="border-t border-gray-800 pt-2">
-                                        <p className="font-semibold text-gray-900">ลงชื่อผู้รับเงิน</p>
-                                        <p className="text-sm text-gray-600">(Employee Signature)</p>
-                                        <p className="text-sm text-gray-600 mt-2">วันที่: _______________</p>
-                                    </div>
+                                <div className="text-center border-t border-tplus-border pt-2">
+                                    <p className="font-semibold text-tplus-text text-sm">.................................................</p>
+                                    <p className="text-sm text-slate-600 mt-1">(ผู้รับเงิน)</p>
                                 </div>
                             </div>
 
                             {/* Footer Note */}
-                            <div className="mt-8 text-center text-xs text-gray-500 border-t border-gray-200 pt-4">
-                                <p>เอกสารนี้ออกโดยระบบอัตโนมัติและมีผลใช้โดยไม่ต้องลงนามด้วยลายมือ</p>
-                                <p>This document is system-generated and valid without handwritten signature.</p>
+                            <div className="mt-8 text-center text-xs text-slate-400 border-t border-tplus-border pt-4">
+                                <p>เอกสารนี้จัดทำโดยระบบคอมพิวเตอร์</p>
                             </div>
                         </div>
                     </div>

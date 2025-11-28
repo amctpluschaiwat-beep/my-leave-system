@@ -130,22 +130,18 @@ function OTForm({ appUser }) {
   const otPreview = calculateOTHours();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-500 to-amber-600 rounded-full mb-4 shadow-lg">
-            <i className='bx bx-time-five text-4xl text-white'></i>
-          </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-2">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-tplus-text">
             ขอทำงานล่วงเวลา (OT)
           </h1>
-          <p className="text-gray-600">กรอกข้อมูลการทำ OT ของคุณให้ครบถ้วน</p>
+          <p className="text-slate-500 mt-1">กรอกข้อมูลการทำ OT ของคุณให้ครบถ้วน</p>
         </div>
 
         {/* Alert Messages */}
         {error && (
-          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md animate-shake">
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm">
             <div className="flex items-center">
               <i className='bx bx-error-circle text-2xl text-red-500 mr-3'></i>
               <p className="text-red-700 font-medium">{error}</p>
@@ -154,7 +150,7 @@ function OTForm({ appUser }) {
         )}
         
         {success && (
-          <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg shadow-md animate-slide-in">
+          <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-md shadow-sm">
             <div className="flex items-center">
               <i className='bx bx-check-circle text-2xl text-green-500 mr-3'></i>
               <p className="text-green-700 font-medium">{success}</p>
@@ -163,37 +159,36 @@ function OTForm({ appUser }) {
         )}
 
         {/* Main Form */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-700 to-blue-600 p-6">
-            <h2 className="text-2xl font-bold text-white flex items-center">
-              <i className='bx bx-briefcase text-3xl mr-3'></i>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-tplus-border">
+          <div className="p-6 border-b border-tplus-border bg-slate-50/50">
+            <h2 className="text-xl font-bold text-tplus-text flex items-center">
+              <i className='bx bx-briefcase text-2xl mr-3 text-slate-600'></i>
               ฟอร์มยื่นคำขอ OT
             </h2>
-            <p className="text-blue-100 mt-1">ผู้ยื่นคำขอ: {appUser?.name} ({appUser?.department})</p>
+            <p className="text-slate-500 mt-1 text-sm">ผู้ยื่นคำขอ: {appUser?.name} ({appUser?.department})</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-8 space-y-6">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* OT Type Selection */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                <i className='bx bx-category mr-2'></i>
-                ประเภท OT
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                1. ประเภท OT
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {otTypes.map((type) => (
                   <button
                     key={type.value}
                     type="button"
                     onClick={() => setOtType(type.value)}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                    className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
                       otType === type.value
-                        ? 'border-sky-500 bg-sky-50 shadow-md scale-105'
-                        : 'border-gray-200 hover:border-sky-300 hover:bg-gray-50'
+                        ? 'border-tplus-orange bg-tplus-orange/10 shadow-sm'
+                        : 'border-tplus-border hover:border-tplus-orange/50 hover:bg-tplus-orange/5'
                     }`}
                   >
                     <div className="flex items-center">
-                      <span className="text-3xl mr-3">{type.icon}</span>
-                      <span className={`font-medium ${otType === type.value ? 'text-sky-700' : 'text-gray-700'}`}>
+                      <span className="text-2xl mr-3">{type.icon}</span>
+                      <span className={`font-medium ${otType === type.value ? 'text-tplus-orange' : 'text-slate-700'}`}>
                         {type.value}
                       </span>
                     </div>
@@ -203,60 +198,56 @@ function OTForm({ appUser }) {
             </div>
 
             {/* Date Range */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <i className='bx bx-calendar mr-2'></i>
-                  วันที่เริ่มต้น
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  2. วันที่เริ่มต้น
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all"
+                  className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-tplus-orange focus:ring-1 focus:ring-tplus-orange transition-all"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <i className='bx bx-calendar-check mr-2'></i>
-                  วันที่สิ้นสุด
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  3. วันที่สิ้นสุด
                 </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all"
+                  className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-tplus-orange focus:ring-1 focus:ring-tplus-orange transition-all"
                   required
                 />
               </div>
             </div>
 
             {/* Time Range */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <i className='bx bx-time mr-2'></i>
-                  เวลาเริ่มต้น
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  4. เวลาเริ่มต้น
                 </label>
                 <input
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all"
+                  className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-tplus-orange focus:ring-1 focus:ring-tplus-orange transition-all"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  <i className='bx bx-time-five mr-2'></i>
-                  เวลาสิ้นสุด
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  5. เวลาสิ้นสุด
                 </label>
                 <input
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all"
+                  className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-tplus-orange focus:ring-1 focus:ring-tplus-orange transition-all"
                   required
                 />
               </div>
@@ -264,50 +255,42 @@ function OTForm({ appUser }) {
 
             {/* OT Calculation Display */}
             {startTime && endTime && otPreview.displayText && (
-              <div className="bg-gradient-to-r from-sky-50 to-blue-50 p-6 rounded-xl border-2 border-sky-200 shadow-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center mr-4">
-                      <i className='bx bx-stopwatch text-2xl text-white'></i>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 font-medium">รวมเวลา OT</p>
-                      <p className="text-2xl font-bold text-sky-600">{otPreview.displayText}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">ระบบคำนวณอัตโนมัติ</p>
-                    <p className="text-sm text-gray-600 font-medium">{otType}</p>
-                  </div>
+              <div className="bg-slate-50 p-4 rounded-lg border border-tplus-border">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-slate-600 font-medium">
+                    รวมเวลา OT ({otType})
+                  </span>
+                  <span className="text-lg font-bold text-tplus-text">
+                    {otPreview.displayText}
+                  </span>
                 </div>
               </div>
             )}
 
             {/* Remark */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                <i className='bx bx-message-detail mr-2'></i>
-                หมายเหตุ / เหตุผลในการทำ OT
+              <label className="block text-sm font-semibold text-slate-700 mb-2">
+                6. หมายเหตุ / เหตุผล
               </label>
               <textarea
                 value={remark}
                 onChange={(e) => setRemark(e.target.value)}
                 rows={4}
                 placeholder="กรุณาระบุเหตุผลในการทำ OT..."
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-sky-500 focus:ring-2 focus:ring-sky-200 transition-all resize-none"
+                className="w-full px-4 py-3 border border-tplus-border rounded-lg focus:border-tplus-orange focus:ring-1 focus:ring-tplus-orange transition-all resize-none"
                 required
               />
             </div>
 
             {/* Submit Button */}
-            <div className="flex gap-4 pt-4">
+            <div className="pt-4">
               <button
                 type="submit"
                 disabled={loading}
-                className={`flex-1 py-4 px-6 rounded-xl font-semibold text-white shadow-lg transition-all duration-600 ease-in-out ${
+                className={`w-full py-3 px-6 rounded-lg font-semibold text-white shadow-md transition-all duration-300 ${
                   loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-700 hover:bg-blue-800 hover:shadow-2xl transform hover:scale-[1.01]'
+                    ? 'bg-slate-400 cursor-not-allowed'
+                    : 'bg-tplus-orange hover:bg-orange-600'
                 }`}
               >
                 {loading ? (
@@ -327,31 +310,22 @@ function OTForm({ appUser }) {
         </div>
 
         {/* Info Card */}
-        <div className="mt-6 bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
-          <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-            <i className='bx bx-info-circle text-xl mr-2 text-orange-500'></i>
+        <div className="mt-6 bg-white rounded-xl shadow-sm p-6 border-l-4 border-tplus-orange">
+          <h3 className="font-semibold text-tplus-text mb-2 flex items-center">
+            <i className='bx bx-info-circle text-xl mr-2 text-tplus-orange'></i>
             ข้อมูลสำคัญเกี่ยวกับ OT
           </h3>
-          <ul className="space-y-2 text-sm text-gray-600">
-            <li className="flex items-start">
-              <i className='bx bx-check text-orange-500 mr-2 mt-0.5'></i>
+          <ul className="space-y-1 text-sm text-slate-600 list-disc list-inside">
+            <li>
               <strong>OT ช่วงเช้า:</strong> 30-60 นาที นับเป็นนาที, เกิน 1 ชม. แสดงเป็น นาที/ชม./วัน
             </li>
-            <li className="flex items-start">
-              <i className='bx bx-check text-orange-500 mr-2 mt-0.5'></i>
+            <li>
               <strong>OT วันหยุด:</strong> นับเป็นชั่วโมง (ทศนิยม 2 ตำแหน่ง)
             </li>
-            <li className="flex items-start">
-              <i className='bx bx-check text-orange-500 mr-2 mt-0.5'></i>
-              คำขอจะถูกส่งไปยังผู้จัดการเพื่ออนุมัติ
-            </li>
-            <li className="flex items-start">
-              <i className='bx bx-check text-orange-500 mr-2 mt-0.5'></i>
-              ตรวจสอบสถานะคำขอได้ที่หน้า Dashboard
-            </li>
+            <li>คำขอจะถูกส่งไปยังผู้จัดการเพื่ออนุมัติ</li>
+            <li>ตรวจสอบสถานะคำขอได้ที่หน้า Dashboard</li>
           </ul>
         </div>
-      </div>
     </div>
   );
 }

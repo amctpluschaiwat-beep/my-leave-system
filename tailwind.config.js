@@ -1,11 +1,19 @@
+const defaultTheme = require('tailwindcss/defaultTheme');
+
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}", // บอกให้ Tailwind สแกนไฟล์ React
   ],
   theme: {
     extend: {
-      // เพิ่มสี "olive" จาก Template ที่คุณส่งมา
+      fontFamily: {
+        sans: ['Sarabun', ...defaultTheme.fontFamily.sans],
+      },
       colors: {
+        'tplus-bg': '#f4f6f8',
+        'tplus-text': '#333333',
+        'tplus-orange': '#ff6600',
+        'tplus-border': '#dddddd',
         olive: {
           50: '#f9faf5',
           100: '#f1f4e8',
