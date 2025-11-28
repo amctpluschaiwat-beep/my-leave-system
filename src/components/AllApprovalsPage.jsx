@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ref, onValue, update, remove } from 'firebase/database';
+import { ref, get, update } from 'firebase/database';
 import { db } from '../config/firebase';
 
 const AllApprovalsPage = ({ appUser }) => {
@@ -35,104 +35,93 @@ const AllApprovalsPage = ({ appUser }) => {
     'ifin'
   ];
 
-  // ดึงข้อมูล Users ก่อน เพื่อใช้ในการ filter ตามแผนก
-  useEffect(() => {
-    const usersRef = ref(db, 'users');
-    const unsubscribe = onValue(usersRef, (snapshot) => {
-      if (snapshot.exists()) {
-        setUsers(snapshot.val());
-      }
+  const fetchData = async () => {
+    try {
+      // Fetch users first
+      const usersSnapshot = await get(ref(db, 'users'));
+      const usersData = usersSnapshot.exists() ? usersSnapshot.val() : {};
+      setUsers(usersData);
       setLoading(prev => ({ ...prev, users: false }));
-    });
-    return () => unsubscribe();
+
+      // Prepare to fetch all data types
+      const leavesRef = ref(db, 'leaves');
+      const otRef = ref(db, 'overtimes');
+      const swapsRef = ref(db, 'holidaySwaps');
+
+      // Fetch leaves
+      get(leavesRef).then(snapshot => {
+        if (snapshot.exists()) {
+          const leavesData = snapshot.val();
+          const leavesList = Object.keys(leavesData).map(key => {
+            const leave = leavesData[key];
+            const userDept = usersData[leave.userId]?.department || '';
+            return { id: key, ...leave, userDepartment: userDept };
+          }).filter(leave => leave.status === 'pending');
+          setLeaves(leavesList);
+        }
+        setLoading(prev => ({ ...prev, leaves: false }));
+      }).catch(error => {
+        console.error("Firebase leaves fetch error:", error);
+        setLoading(prev => ({ ...prev, leaves: false }));
+      });
+
+      // Fetch OTs
+      get(otRef).then(snapshot => {
+        if (snapshot.exists()) {
+          const otData = snapshot.val();
+          const otList = Object.keys(otData).map(key => {
+            const ot = otData[key];
+            const userDept = usersData[ot.userId]?.department || '';
+            return { id: key, ...ot, userDepartment: userDept };
+          }).filter(ot => ot.status === 'pending');
+          setOvertimes(otList);
+        }
+        setLoading(prev => ({ ...prev, overtimes: false }));
+      }).catch(error => {
+        console.error("Firebase overtimes fetch error:", error);
+        setLoading(prev => ({ ...prev, overtimes: false }));
+      });
+
+      // Fetch Swaps
+      get(swapsRef).then(snapshot => {
+        if (snapshot.exists()) {
+          const swapsData = snapshot.val();
+          const swapsList = [];
+          Object.keys(swapsData).forEach(uid => {
+            const userSwaps = swapsData[uid];
+            Object.keys(userSwaps).forEach(swapId => {
+              const swap = userSwaps[swapId];
+              const userDept = usersData[uid]?.department || '';
+              if (swap.status === 'pending') {
+                swapsList.push({ id: swapId, uid: uid, ...swap, userDepartment: userDept });
+              }
+            });
+          });
+          setSwaps(swapsList);
+        }
+        setLoading(prev => ({ ...prev, swaps: false }));
+      }).catch(error => {
+        console.error("Firebase swaps fetch error:", error);
+        setLoading(prev => ({ ...prev, swaps: false }));
+      });
+
+    } catch (error) {
+      console.error("Failed to fetch initial user data:", error);
+      // If users fail to load, stop all loading states
+      setLoading({ users: false, leaves: false, overtimes: false, swaps: false });
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchData();
   }, []);
 
-  // ดึงข้อมูลการลาทั้งหมด
-  useEffect(() => {
-    const leavesRef = ref(db, 'leaves');
-    const unsubscribe = onValue(leavesRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const leavesData = snapshot.val();
-        const leavesList = Object.keys(leavesData)
-          .map(key => {
-            const leave = leavesData[key];
-            const userDept = users[leave.userId]?.department || '';
-            return { 
-              id: key, 
-              ...leave,
-              userDepartment: userDept
-            };
-          })
-          .filter(leave => {
-            if (leave.status !== 'pending') return false;
-            if (selectedDepartment === 'all') return true;
-            return leave.userDepartment === selectedDepartment;
-          })
-          .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
-        setLeaves(leavesList);
-      } else {
-        setLeaves([]);
-      }
-      setLoading(prev => ({ ...prev, leaves: false }));
-    });
-    return () => unsubscribe();
-  }, [users, selectedDepartment]);
-
-  // Fetch all Overtimes
-  useEffect(() => {
-    const otRef = ref(db, 'overtimes');
-    const unsubscribe = onValue(otRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const otData = snapshot.val();
-        const otList = Object.keys(otData).map(key => {
-          const ot = otData[key];
-          const userDept = users[ot.userId]?.department || '';
-          return { id: key, ...ot, userDepartment: userDept };
-        }).filter(ot => {
-          if (ot.status !== 'pending') return false;
-          if (selectedDepartment === 'all') return true;
-          return ot.userDepartment === selectedDepartment;
-        }).sort((a, b) => (b.submittedAt || 0 - a.submittedAt || 0));
-        setOvertimes(otList);
-      } else {
-        setOvertimes([]);
-      }
-      setLoading(prev => ({ ...prev, overtimes: false }));
-    });
-    return () => unsubscribe();
-  }, [users, selectedDepartment]);
-
-  // Fetch all Holiday Swaps
-  useEffect(() => {
-    const swapsRef = ref(db, 'holidaySwaps');
-    const unsubscribe = onValue(swapsRef, (snapshot) => {
-      if (snapshot.exists()) {
-        const swapsData = snapshot.val();
-        const swapsList = [];
-        // Data is nested under user UID
-        Object.keys(swapsData).forEach(uid => {
-          const userSwaps = swapsData[uid];
-          Object.keys(userSwaps).forEach(swapId => {
-            const swap = userSwaps[swapId];
-            const userDept = users[uid]?.department || '';
-            swapsList.push({ id: swapId, uid: uid, ...swap, userDepartment: userDept });
-          });
-        });
-
-        const filteredSwaps = swapsList.filter(swap => {
-          if (swap.status !== 'pending') return false;
-          if (selectedDepartment === 'all') return true;
-          return swap.userDepartment === selectedDepartment;
-        }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        setSwaps(filteredSwaps);
-      } else {
-        setSwaps([]);
-      }
-      setLoading(prev => ({ ...prev, swaps: false }));
-    });
-    return () => unsubscribe();
-  }, [users, selectedDepartment]);
+  
+  // Re-filter data when department changes, no need to re-fetch
+  const filteredLeaves = leaves.filter(l => selectedDepartment === 'all' || l.userDepartment === selectedDepartment);
+  const filteredOvertimes = overtimes.filter(o => selectedDepartment === 'all' || o.userDepartment === selectedDepartment);
+  const filteredSwaps = swaps.filter(s => selectedDepartment === 'all' || s.userDepartment === selectedDepartment);
 
 
   // จัดการ Checkbox
@@ -148,9 +137,9 @@ const AllApprovalsPage = ({ appUser }) => {
   // เลือกทั้งหมด
   const handleSelectAll = (type) => {
     const dataMap = {
-      leaves: leaves,
-      overtimes: overtimes,
-      swaps: swaps
+      leaves: filteredLeaves,
+      overtimes: filteredOvertimes,
+      swaps: filteredSwaps,
     };
     const allIds = dataMap[type].map(item => item.id);
     setSelectedItems(prev => ({
@@ -200,6 +189,9 @@ const AllApprovalsPage = ({ appUser }) => {
 
       await update(ref(db), updates);
       
+      // Manually refresh data after update
+      fetchData(); 
+      
       // รีเซ็ต selection
       setSelectedItems(prev => ({ ...prev, [type]: [] }));
       
@@ -229,6 +221,9 @@ const AllApprovalsPage = ({ appUser }) => {
         reviewedBy: appUser.name,
         reviewedAt: new Date().toISOString(),
       });
+
+      // Manually refresh data after update
+      fetchData();
       
       alert(`${actionText}สำเร็จ`);
     } catch (err) {
@@ -522,9 +517,9 @@ const AllApprovalsPage = ({ appUser }) => {
       </div>
 
       {/* Table Content */}
-      {activeTab === 'leaves' && renderTable('leaves', leaves)}
-      {activeTab === 'overtimes' && renderTable('overtimes', overtimes)}
-      {activeTab === 'swaps' && renderTable('swaps', swaps)}
+      {activeTab === 'leaves' && renderTable('leaves', filteredLeaves)}
+      {activeTab === 'overtimes' && renderTable('overtimes', filteredOvertimes)}
+      {activeTab === 'swaps' && renderTable('swaps', filteredSwaps)}
     </div>
   );
 };

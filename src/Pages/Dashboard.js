@@ -15,6 +15,7 @@ const Dashboard = ({ appUser }) => {
     approvedOT: 0
   });
   const [loading, setLoading] = useState(true);
+  const [modalData, setModalData] = useState(null); // State for modal
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -276,7 +277,7 @@ const Dashboard = ({ appUser }) => {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider hidden lg:table-cell">
                   ผู้อนุมัติ
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   การดำเนินการ
                 </th>
               </tr>
@@ -324,15 +325,23 @@ const Dashboard = ({ appUser }) => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 hidden lg:table-cell">
                         {leave.reviewedBy || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {leave.status === 'pending' && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                        <div className="flex items-center justify-center space-x-2">
                           <button
-                            onClick={() => handleCancelRequest('leaves', leave.id)}
-                            className="text-red-500 hover:text-red-700 font-medium"
+                            onClick={() => setModalData({ type: 'Leave', ...leave })}
+                            className="text-blue-500 hover:text-blue-700 font-medium"
                           >
-                            ยกเลิก
+                            ดู
                           </button>
-                        )}
+                          {leave.status === 'pending' && (
+                            <button
+                              onClick={() => handleCancelRequest('leaves', leave.id)}
+                              className="text-red-500 hover:text-red-700 font-medium"
+                            >
+                              ยกเลิก
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ));
@@ -384,7 +393,7 @@ const Dashboard = ({ appUser }) => {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">วันที่</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">เวลา</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">สถานะ</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">การดำเนินการ</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">การดำเนินการ</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-tplus-border">
@@ -403,15 +412,23 @@ const Dashboard = ({ appUser }) => {
                         {getStatusText(ot.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {ot.status === 'pending' && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <div className="flex items-center justify-center space-x-2">
                         <button
-                          onClick={() => handleCancelRequest('overtimes', ot.id)}
-                          className="text-red-500 hover:text-red-700 font-medium"
+                          onClick={() => setModalData({ type: 'OT', ...ot })}
+                          className="text-blue-500 hover:text-blue-700 font-medium"
                         >
-                          ยกเลิก
+                          ดู
                         </button>
-                      )}
+                        {ot.status === 'pending' && (
+                          <button
+                            onClick={() => handleCancelRequest('overtimes', ot.id)}
+                            className="text-red-500 hover:text-red-700 font-medium"
+                          >
+                            ยกเลิก
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -433,7 +450,7 @@ const Dashboard = ({ appUser }) => {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">วันหยุดเดิม</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">วันที่ขอสลับ</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">สถานะ</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">การดำเนินการ</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">การดำเนินการ</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-tplus-border">
@@ -451,15 +468,23 @@ const Dashboard = ({ appUser }) => {
                         {getStatusText(swap.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {swap.status === 'pending' && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <div className="flex items-center justify-center space-x-2">
                         <button
-                          onClick={() => handleCancelRequest(`holidaySwaps/${appUser.uid}`, swap.id)}
-                          className="text-red-500 hover:text-red-700 font-medium"
+                          onClick={() => setModalData({ type: 'Swap', ...swap })}
+                          className="text-blue-500 hover:text-blue-700 font-medium"
                         >
-                          ยกเลิก
+                          ดู
                         </button>
-                      )}
+                        {swap.status === 'pending' && (
+                          <button
+                            onClick={() => handleCancelRequest(`holidaySwaps/${appUser.uid}`, swap.id)}
+                            className="text-red-500 hover:text-red-700 font-medium"
+                          >
+                            ยกเลิก
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -468,6 +493,69 @@ const Dashboard = ({ appUser }) => {
           </table>
         </div>
       </div>
+
+      {/* Details Modal */}
+      {modalData && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div className="p-4 sm:p-6 border-b border-tplus-border flex justify-between items-center">
+              <h3 className="text-base sm:text-lg font-bold text-tplus-text">รายละเอียดคำขอ</h3>
+              <button onClick={() => setModalData(null)} className="p-1 rounded-full hover:bg-slate-100">
+                <i className='bx bx-x text-2xl text-slate-500'></i>
+              </button>
+            </div>
+            <div className="p-4 sm:p-6 space-y-4">
+              {/* Line 1 & 2 */}
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                {appUser.profileImageUrl ? (
+                  <img src={appUser.profileImageUrl} alt="Profile" className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover" />
+                ) : (
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 flex-shrink-0">
+                    <i className='bx bxs-user text-2xl sm:text-3xl'></i>
+                  </div>
+                )}
+                <div>
+                  <p className="font-bold text-tplus-text text-sm sm:text-base">{appUser.name}</p>
+                  <p className="text-xs sm:text-sm text-slate-500">{appUser.department}</p>
+                  <p className="text-xs sm:text-sm text-slate-500">{appUser.position}</p>
+                </div>
+              </div>
+
+              {/* Line 3: Details */}
+              <div className="p-4 bg-slate-50 rounded-lg border border-tplus-border">
+                <p className="font-semibold text-tplus-text">
+                  {modalData.type === 'Leave' && `ประเภทการลา: ${modalData.leaveType}`}
+                  {modalData.type === 'OT' && `ประเภท OT: ${modalData.otType}`}
+                  {modalData.type === 'Swap' && 'คำขอสลับวันหยุด'}
+                </p>
+                <p className="text-sm text-slate-600 mt-1">
+                  {modalData.type === 'Leave' && `วันที่: ${modalData.startDate} ถึง ${modalData.endDate} (${modalData.totalDays} วัน)`}
+                  {modalData.type === 'OT' && `วันที่: ${modalData.startDate} (เวลา ${modalData.startTime} - ${modalData.endTime})`}
+                  {modalData.type === 'Swap' && `จาก ${modalData.originalDate} ไป ${modalData.swapDate}`}
+                </p>
+                {(modalData.reason || modalData.remark) && (
+                  <p className="text-sm text-slate-500 mt-2 pt-2 border-t border-tplus-border">
+                    เหตุผล: {modalData.reason || modalData.remark}
+                  </p>
+                )}
+              </div>
+
+              {/* Line 4: Status */}
+              <div className={`p-3 rounded-lg text-center font-medium ${getStatusBadge(modalData.status)}`}>
+                {getStatusText(modalData.status)}
+              </div>
+
+              {/* Line 5 & 6: Dates */}
+              <div className="text-xs text-slate-500 space-y-1">
+                <p>วันที่ยื่น: {formatDate(modalData.submittedAt || modalData.createdAt)}</p>
+                {modalData.reviewedAt && (
+                  <p>วันที่อนุมัติ/ปฏิเสธ: {formatDate(modalData.reviewedAt)} โดย {modalData.reviewedBy}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
     </div>
   );
