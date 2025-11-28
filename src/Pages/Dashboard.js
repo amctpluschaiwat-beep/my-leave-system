@@ -86,15 +86,16 @@ const Dashboard = ({ appUser }) => {
     });
 
     // Fetch Swap Holiday Requests
-    const swapsRef = ref(db, 'holidaySwaps');
+    const swapsRef = ref(db, `holidaySwaps/${appUser.uid}`); // Corrected path to fetch only the current user's swaps
     const unsubscribeSwaps = onValue(swapsRef, (snapshot) => {
       if (snapshot.exists()) {
         const swapsData = snapshot.val();
         const userSwaps = Object.keys(swapsData)
           .map(id => ({ id, ...swapsData[id] }))
-          .filter(swap => swap.userId === appUser.uid)
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setMySwaps(userSwaps);
+      } else {
+        setMySwaps([]); // Clear swaps if none are found
       }
     });
 

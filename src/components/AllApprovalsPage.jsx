@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { ref, onValue, update } from 'firebase/database';
-import { db, auth } from '../config/firebase';
+import { ref, onValue, update, remove } from 'firebase/database';
+import { db } from '../config/firebase';
 
 const AllApprovalsPage = ({ appUser }) => {
   // States
   const [leaves, setLeaves] = useState([]);
-  const [otMorning, setOtMorning] = useState([]);
-  const [otHoliday, setOtHoliday] = useState([]);
+  const [overtimes, setOvertimes] = useState([]);
+  const [swaps, setSwaps] = useState([]);
   const [users, setUsers] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState({
+    users: true,
+    leaves: true,
+    overtimes: true,
+    swaps: true,
+  });
   const [selectedItems, setSelectedItems] = useState({
     leaves: [],
-    otMorning: [],
-    otHoliday: []
+    overtimes: [],
+    swaps: []
   });
   const [activeTab, setActiveTab] = useState('leaves');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
@@ -37,6 +42,7 @@ const AllApprovalsPage = ({ appUser }) => {
       if (snapshot.exists()) {
         setUsers(snapshot.val());
       }
+      setLoading(prev => ({ ...prev, users: false }));
     });
     return () => unsubscribe();
   }, []);
@@ -67,11 +73,12 @@ const AllApprovalsPage = ({ appUser }) => {
       } else {
         setLeaves([]);
       }
+      setLoading(prev => ({ ...prev, leaves: false }));
     });
     return () => unsubscribe();
   }, [users, selectedDepartment]);
 
-  // ดึงข้อมูล OT ทั้งหมด
+  // Fetch all Overtimes
   useEffect(() => {
     const otRef = ref(db, 'overtimes');
     const unsubscribe = onValue(otRef, (snapshot) => {
@@ -80,37 +87,53 @@ const AllApprovalsPage = ({ appUser }) => {
         const otList = Object.keys(otData).map(key => {
           const ot = otData[key];
           const userDept = users[ot.userId]?.department || '';
-          return { 
-            id: key, 
-            ...ot,
-            userDepartment: userDept
-          };
-        });
-        
-        // แยกตามประเภท OT และกรองตามแผนก
-        const filterByDept = (list) => {
-          if (selectedDepartment === 'all') return list;
-          return list.filter(item => item.userDepartment === selectedDepartment);
-        };
-
-        const morning = filterByDept(
-          otList.filter(ot => ot.otType === 'OT ช่วงเช้า' && ot.status === 'pending')
-        ).sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
-        
-        const holiday = filterByDept(
-          otList.filter(ot => ot.otType === 'OT วันหยุด' && ot.status === 'pending')
-        ).sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
-        
-        setOtMorning(morning);
-        setOtHoliday(holiday);
+          return { id: key, ...ot, userDepartment: userDept };
+        }).filter(ot => {
+          if (ot.status !== 'pending') return false;
+          if (selectedDepartment === 'all') return true;
+          return ot.userDepartment === selectedDepartment;
+        }).sort((a, b) => (b.submittedAt || 0 - a.submittedAt || 0));
+        setOvertimes(otList);
       } else {
-        setOtMorning([]);
-        setOtHoliday([]);
+        setOvertimes([]);
       }
-      setLoading(false);
+      setLoading(prev => ({ ...prev, overtimes: false }));
     });
     return () => unsubscribe();
   }, [users, selectedDepartment]);
+
+  // Fetch all Holiday Swaps
+  useEffect(() => {
+    const swapsRef = ref(db, 'holidaySwaps');
+    const unsubscribe = onValue(swapsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const swapsData = snapshot.val();
+        const swapsList = [];
+        // Data is nested under user UID
+        Object.keys(swapsData).forEach(uid => {
+          const userSwaps = swapsData[uid];
+          Object.keys(userSwaps).forEach(swapId => {
+            const swap = userSwaps[swapId];
+            const userDept = users[uid]?.department || '';
+            swapsList.push({ id: swapId, uid: uid, ...swap, userDepartment: userDept });
+          });
+        });
+
+        const filteredSwaps = swapsList.filter(swap => {
+          if (swap.status !== 'pending') return false;
+          if (selectedDepartment === 'all') return true;
+          return swap.userDepartment === selectedDepartment;
+        }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        setSwaps(filteredSwaps);
+      } else {
+        setSwaps([]);
+      }
+      setLoading(prev => ({ ...prev, swaps: false }));
+    });
+    return () => unsubscribe();
+  }, [users, selectedDepartment]);
+
 
   // จัดการ Checkbox
   const handleCheckboxChange = (type, id) => {
@@ -126,8 +149,8 @@ const AllApprovalsPage = ({ appUser }) => {
   const handleSelectAll = (type) => {
     const dataMap = {
       leaves: leaves,
-      otMorning: otMorning,
-      otHoliday: otHoliday
+      overtimes: overtimes,
+      swaps: swaps
     };
     const allIds = dataMap[type].map(item => item.id);
     setSelectedItems(prev => ({
@@ -151,15 +174,29 @@ const AllApprovalsPage = ({ appUser }) => {
     }
 
     try {
-      const dbPath = type === 'leaves' ? 'leaves' : 'overtimes';
+      let dbPath;
+      if (type === 'leaves') dbPath = 'leaves';
+      if (type === 'overtimes') dbPath = 'overtimes';
+      if (type === 'swaps') dbPath = 'holidaySwaps'; // Path is different for swaps
+      
       const updates = {};
 
-      selectedIds.forEach(id => {
-        updates[`${dbPath}/${id}/status`] = newStatus;
-        updates[`${dbPath}/${id}/reviewedBy`] = appUser.name;
-        updates[`${dbPath}/${id}/reviewedAt`] = Date.now();
-        updates[`${dbPath}/${id}/approverId`] = auth.currentUser?.uid || '';
-      });
+      if (type === 'swaps') {
+        selectedIds.forEach(id => {
+          const swapItem = swaps.find(s => s.id === id);
+          if (swapItem) {
+            updates[`${dbPath}/${swapItem.uid}/${id}/status`] = newStatus;
+            updates[`${dbPath}/${swapItem.uid}/${id}/reviewedBy`] = appUser.name;
+            updates[`${dbPath}/${swapItem.uid}/${id}/reviewedAt`] = new Date().toISOString();
+          }
+        });
+      } else {
+        selectedIds.forEach(id => {
+          updates[`${dbPath}/${id}/status`] = newStatus;
+          updates[`${dbPath}/${id}/reviewedBy`] = appUser.name;
+          updates[`${dbPath}/${id}/reviewedAt`] = new Date().toISOString();
+        });
+      }
 
       await update(ref(db), updates);
       
@@ -174,7 +211,7 @@ const AllApprovalsPage = ({ appUser }) => {
   };
 
   // อนุมัติ/ปฏิเสธรายการเดี่ยว
-  const handleSingleAction = async (type, id, newStatus) => {
+  const handleSingleAction = async (type, item, newStatus) => {
     const actionText = newStatus === 'approved' ? 'อนุมัติ' : 'ปฏิเสธ';
     
     if (!window.confirm(`คุณต้องการ${actionText}รายการนี้ใช่หรือไม่?`)) {
@@ -182,14 +219,15 @@ const AllApprovalsPage = ({ appUser }) => {
     }
 
     try {
-      const dbPath = type === 'leaves' ? 'leaves' : 'overtimes';
-      const itemRef = ref(db, `${dbPath}/${id}`);
-      
+      let itemRef;
+      if (type === 'leaves') itemRef = ref(db, `leaves/${item.id}`);
+      if (type === 'overtimes') itemRef = ref(db, `overtimes/${item.id}`);
+      if (type === 'swaps') itemRef = ref(db, `holidaySwaps/${item.uid}/${item.id}`);
+
       await update(itemRef, {
         status: newStatus,
         reviewedBy: appUser.name,
-        reviewedAt: Date.now(),
-        approverId: auth.currentUser?.uid || ''
+        reviewedAt: new Date().toISOString(),
       });
       
       alert(`${actionText}สำเร็จ`);
@@ -212,6 +250,8 @@ const AllApprovalsPage = ({ appUser }) => {
 
   const renderTable = (type, data) => {
     const isLeave = type === 'leaves';
+    const isOT = type === 'overtimes';
+    const isSwap = type === 'swaps';
     const selectedIds = selectedItems[type];
 
     return (
@@ -252,17 +292,26 @@ const AllApprovalsPage = ({ appUser }) => {
                   />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">พนักงาน</th>
-                {isLeave ? (
+                {isLeave && (
                   <>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ประเภท</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่ลา</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">เหตุผล</th>
                   </>
-                ) : (
+                )}
+                {isOT && (
                   <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ประเภท OT</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">เวลา</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชั่วโมง OT</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">รวม</th>
+                  </>
+                )}
+                {isSwap && (
+                  <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันหยุดเดิม</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่ขอสลับ</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">เหตุผล</th>
                   </>
                 )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่ยื่น</th>
@@ -272,7 +321,7 @@ const AllApprovalsPage = ({ appUser }) => {
             <tbody className="bg-white divide-y divide-gray-200">
               {data.length === 0 ? (
                 <tr>
-                  <td colSpan={isLeave ? 7 : 7} className="text-center py-8 text-gray-500">
+                  <td colSpan={8} className="text-center py-8 text-gray-500">
                     ไม่มีรายการรออนุมัติ
                   </td>
                 </tr>
@@ -293,7 +342,7 @@ const AllApprovalsPage = ({ appUser }) => {
                         <div className="text-xs text-gray-500">{item.userDepartment}</div>
                       )}
                     </td>
-                    {isLeave ? (
+                    {isLeave && (
                       <>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.leaveType}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -304,28 +353,39 @@ const AllApprovalsPage = ({ appUser }) => {
                           <div className="text-sm text-gray-700 truncate" title={item.reason}>{item.reason}</div>
                         </td>
                       </>
-                    ) : (
-                      <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.otDate}</td>
+                    )}
+                    {isOT && (
+                       <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.otType}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.startDate}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.startTime} - {item.endTime}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                            {item.otHours}
+                            {item.otDisplay}
                           </span>
                         </td>
                       </>
                     )}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.submittedAt)}</td>
+                    {isSwap && (
+                       <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.originalDate}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{item.swapDate}</td>
+                        <td className="px-6 py-4 max-w-xs">
+                          <div className="text-sm text-gray-700 truncate" title={item.reason}>{item.reason}</div>
+                        </td>
+                      </>
+                    )}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(item.submittedAt || item.createdAt)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex space-x-2 justify-center">
                         <button
-                          onClick={() => handleSingleAction(type, item.id, 'approved')}
+                          onClick={() => handleSingleAction(type, item, 'approved')}
                           className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded-md text-sm transition-colors"
                         >
                           ✓ อนุมัติ
                         </button>
                         <button
-                          onClick={() => handleSingleAction(type, item.id, 'rejected')}
+                          onClick={() => handleSingleAction(type, item, 'rejected')}
                           className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded-md text-sm transition-colors"
                         >
                           ✗ ปฏิเสธ
@@ -342,7 +402,9 @@ const AllApprovalsPage = ({ appUser }) => {
     );
   };
 
-  if (loading) {
+  const isLoading = Object.values(loading).some(status => status === true);
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -404,7 +466,7 @@ const AllApprovalsPage = ({ appUser }) => {
               {selectedDepartment !== 'all' && (
                 <p className="text-xs text-gray-500 mt-1">{selectedDepartment}</p>
               )}
-              <p className="text-3xl font-bold text-blue-600 mt-2">{otMorning.length}</p>
+              <p className="text-3xl font-bold text-blue-600 mt-2">{overtimes.length}</p>
             </div>
             <i className='bx bx-time-five text-4xl text-blue-500'></i>
           </div>
@@ -412,13 +474,13 @@ const AllApprovalsPage = ({ appUser }) => {
         <div className="bg-gradient-to-br from-purple-50 to-violet-100 p-6 rounded-lg shadow-md border-l-4 border-purple-500">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">OT วันหยุด (รอพิจารณา)</p>
+              <p className="text-sm text-gray-600 font-medium">สลับวันหยุด (รอพิจารณา)</p>
               {selectedDepartment !== 'all' && (
                 <p className="text-xs text-gray-500 mt-1">{selectedDepartment}</p>
               )}
-              <p className="text-3xl font-bold text-purple-600 mt-2">{otHoliday.length}</p>
+              <p className="text-3xl font-bold text-purple-600 mt-2">{swaps.length}</p>
             </div>
-            <i className='bx bx-calendar-check text-4xl text-purple-500'></i>
+            <i className='bx bx-transfer text-4xl text-purple-500'></i>
           </div>
         </div>
       </div>
@@ -437,32 +499,32 @@ const AllApprovalsPage = ({ appUser }) => {
             📝 การลาทั่วไป ({leaves.length})
           </button>
           <button
-            onClick={() => setActiveTab('otMorning')}
+            onClick={() => setActiveTab('overtimes')}
             className={`${
-              activeTab === 'otMorning'
+              activeTab === 'overtimes'
                 ? 'border-indigo-500 text-indigo-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
           >
-            🌅 OT ช่วงเช้า ({otMorning.length})
+            🌅 OT ({overtimes.length})
           </button>
           <button
-            onClick={() => setActiveTab('otHoliday')}
+            onClick={() => setActiveTab('swaps')}
             className={`${
-              activeTab === 'otHoliday'
+              activeTab === 'swaps'
                 ? 'border-indigo-500 text-indigo-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}
           >
-            🎉 OT วันหยุด ({otHoliday.length})
+            🔄 สลับวันหยุด ({swaps.length})
           </button>
         </nav>
       </div>
 
       {/* Table Content */}
       {activeTab === 'leaves' && renderTable('leaves', leaves)}
-      {activeTab === 'otMorning' && renderTable('otMorning', otMorning)}
-      {activeTab === 'otHoliday' && renderTable('otHoliday', otHoliday)}
+      {activeTab === 'overtimes' && renderTable('overtimes', overtimes)}
+      {activeTab === 'swaps' && renderTable('swaps', swaps)}
     </div>
   );
 };
