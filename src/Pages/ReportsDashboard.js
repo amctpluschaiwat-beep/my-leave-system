@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ref, onValue, remove } from 'firebase/database';
+import { ref, get, remove } from 'firebase/database';
 import { db } from '../config/firebase';
 import LoadingSpinner from './LoadingSpinner.js';
 
@@ -21,58 +21,52 @@ const ReportsDashboard = ({ appUser }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending'); // pending, approved, rejected
 
-  // Fetch all data for stats and lists
-  useEffect(() => {
-    const leavesRef = ref(db, 'leaves');
-    const otRef = ref(db, 'overtimes');
-    const usersRef = ref(db, 'users');
-    const swapsRef = ref(db, 'holidaySwaps');
+  // Fetch all data using get() for stability
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const usersSnapshot = await get(ref(db, 'users'));
+      const leavesSnapshot = await get(ref(db, 'leaves'));
+      const otSnapshot = await get(ref(db, 'overtimes'));
+      const swapsSnapshot = await get(ref(db, 'holidaySwaps'));
 
-    const unsubscribeUsers = onValue(usersRef, (snapshot) => {
-      const usersData = snapshot.val() || {};
-      setStats(prev => ({ ...prev, totalUsers: Object.keys(usersData).length }));
-    });
+      const usersData = usersSnapshot.val() || {};
+      const leavesData = leavesSnapshot.val() || {};
+      const otData = otSnapshot.val() || {};
+      const swapsData = swapsSnapshot.val() || {};
 
-    const unsubscribeLeaves = onValue(leavesRef, (snapshot) => {
-      const leavesData = snapshot.val() || {};
       const leavesList = Object.keys(leavesData).map(key => ({ id: key, ...leavesData[key], requestType: 'Leave' }));
-      setAllLeaves(leavesList);
-      setStats(prev => ({ ...prev, totalLeaves: leavesList.length, pendingLeaves: leavesList.filter(l => l.status === 'pending').length }));
-    });
-
-    const unsubscribeOT = onValue(otRef, (snapshot) => {
-      const otData = snapshot.val() || {};
       const otList = Object.keys(otData).map(key => ({ id: key, ...otData[key], requestType: 'OT' }));
-      setAllOTs(otList);
-      setStats(prev => ({ ...prev, totalOT: otList.length, pendingOT: otList.filter(o => o.status === 'pending').length }));
-    });
-
-    const unsubscribeSwaps = onValue(swapsRef, (snapshot) => {
-      const swapsData = snapshot.val() || {};
       const swapsList = [];
       Object.keys(swapsData).forEach(uid => {
         Object.keys(swapsData[uid]).forEach(swapId => {
           swapsList.push({ id: swapId, uid: uid, ...swapsData[uid][swapId], requestType: 'Swap' });
         });
       });
+
+      setAllLeaves(leavesList);
+      setAllOTs(otList);
       setAllSwaps(swapsList);
-      setStats(prev => ({...prev, totalSwaps: swapsList.length, pendingSwaps: swapsList.filter(s => s.status === 'pending').length }));
-    });
 
-    // Combine loading states
-    Promise.all([
-      new Promise(resolve => onValue(leavesRef, () => resolve(), { onlyOnce: true })),
-      new Promise(resolve => onValue(otRef, () => resolve(), { onlyOnce: true })),
-      new Promise(resolve => onValue(usersRef, () => resolve(), { onlyOnce: true })),
-      new Promise(resolve => onValue(swapsRef, () => resolve(), { onlyOnce: true })),
-    ]).then(() => setLoading(false));
+      setStats({
+        totalUsers: Object.keys(usersData).length,
+        totalLeaves: leavesList.length,
+        pendingLeaves: leavesList.filter(l => l.status === 'pending').length,
+        totalOT: otList.length,
+        pendingOT: otList.filter(o => o.status === 'pending').length,
+        totalSwaps: swapsList.length,
+        pendingSwaps: swapsList.filter(s => s.status === 'pending').length,
+      });
 
-    return () => {
-      unsubscribeLeaves();
-      unsubscribeOT();
-      unsubscribeUsers();
-      unsubscribeSwaps();
-    };
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   const handleDeleteRequest = async (item) => {
@@ -85,6 +79,7 @@ const ReportsDashboard = ({ appUser }) => {
       try {
         await remove(itemRef);
         alert('ลบคำขอสำเร็จ!');
+        fetchData(); // Re-fetch data after deletion
       } catch (error) {
         console.error("Error removing request: ", error);
         alert('เกิดข้อผิดพลาดในการลบคำขอ');
