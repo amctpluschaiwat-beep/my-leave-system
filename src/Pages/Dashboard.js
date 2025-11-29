@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ref, onValue, remove } from 'firebase/database';
+import { ref, onValue, remove, query, orderByChild, equalTo } from 'firebase/database';
 import { db } from '../config/firebase';
 
 const Dashboard = ({ appUser }) => {
@@ -24,21 +24,17 @@ const Dashboard = ({ appUser }) => {
   useEffect(() => {
     if (!appUser) return;
 
+    // --- Data Fetching ---
     // ดึงข้อมูลการลาของตัวเอง
-    const leavesRef = ref(db, 'leaves');
-    const unsubscribeLeaves = onValue(leavesRef, (snapshot) => {
+    const leavesQuery = query(ref(db, 'leaves'), orderByChild('userId'), equalTo(appUser.uid));
+    const unsubscribeLeaves = onValue(leavesQuery, (snapshot) => {
       if (snapshot.exists()) {
         const leavesData = snapshot.val();
-        const allLeavesList = Object.keys(leavesData).map(key => ({
+        const userLeaves = Object.keys(leavesData).map(key => ({
           id: key,
           ...leavesData[key]
-        }));
+        })).sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
 
-        // กรองเฉพาะของตัวเอง
-        const userLeaves = allLeavesList
-          .filter(leave => leave.userId === appUser.uid)
-          .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
-        
         setMyLeaves(userLeaves);
         
         // คำนวณสถิติของตัวเอง
@@ -54,18 +50,14 @@ const Dashboard = ({ appUser }) => {
     });
 
     // ดึงข้อมูล OT ของตัวเอง
-    const otRef = ref(db, 'overtimes');
-    const unsubscribeOT = onValue(otRef, (snapshot) => {
+    const otQuery = query(ref(db, 'overtimes'), orderByChild('userId'), equalTo(appUser.uid));
+    const unsubscribeOT = onValue(otQuery, (snapshot) => {
       if (snapshot.exists()) {
         const otData = snapshot.val();
-        const allOTList = Object.keys(otData).map(key => ({
+        const userOT = Object.keys(otData).map(key => ({
           id: key,
           ...otData[key]
-        }));
-
-        const userOT = allOTList
-          .filter(ot => ot.userId === appUser.uid)
-          .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+        })).sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
         
         setMyOvertimes(userOT); // Set OT list for table display
 
