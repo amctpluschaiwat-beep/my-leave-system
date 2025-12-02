@@ -1,38 +1,23 @@
 {
   "rules": {
-    "users": {
-      "$uid": {
-        ".read": "auth != null",
-        ".write": "$uid === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'commander' || root.child('users').child(auth.uid).child('role').val() === 'CEO' || root.child('users').child(auth.uid).child('role').val() === 'admin'"
-      }
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "holidays": {
+      ".read": "auth != null",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'hr' || root.child('users').child(auth.uid).child('role').val() === 'Manager' || root.child('users').child(auth.uid).child('role').val() === 'commander'"
+    },
+    "holidayHistory": {
+      ".read": "auth != null",
+      ".write": "root.child('users').child(auth.uid).child('role').val() === 'hr' || root.child('users').child(auth.uid).child('role').val() === 'Manager' || root.child('users').child(auth.uid).child('role').val() === 'commander'"
     },
     "leaves": {
-      ".read": "auth != null",
-      "$leaveId": {
-        ".write": "auth != null"
-      }
+      ".indexOn": ["userId", "status", "submittedAt", "startDate"]
     },
     "overtimes": {
-      ".read": "auth != null",
-      "$otId": {
-        ".write": "auth != null"
-      }
+      ".indexOn": ["userId", "status", "submittedAt", "startDate"]
     },
-    "payslips": {
-      "$uid": {
-        ".read": "$uid === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'commander' || root.child('users').child(auth.uid).child('role').val() === 'CEO'",
-        ".write": "root.child('users').child(auth.uid).child('role').val() === 'commander'"
-      }
-    },
-    "bankAccounts": {
-      "$uid": {
-        ".read": "$uid === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'commander' || root.child('users').child(auth.uid).child('role').val() === 'CEO'",
-        ".write": "root.child('users').child(auth.uid).child('role').val() === 'commander'"
-      }
-    },
-    "companyProfile": {
-      ".read": "auth != null",
-      ".write": "root.child('users').child(auth.uid).child('role').val() === 'commander' || root.child('users').child(auth.uid).child('role').val() === 'CEO'"
+    "users": {
+      ".indexOn": ["department", "role"]
     }
   }
 }

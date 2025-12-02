@@ -7,7 +7,6 @@ const AllApprovalsPage = ({ appUser }) => {
   const [leaves, setLeaves] = useState([]);
   const [overtimes, setOvertimes] = useState([]);
   const [swaps, setSwaps] = useState([]);
-  const [users, setUsers] = useState({});
   const [loading, setLoading] = useState({
     users: true,
     leaves: true,
@@ -40,7 +39,6 @@ const AllApprovalsPage = ({ appUser }) => {
       // Fetch users first
       const usersSnapshot = await get(ref(db, 'users'));
       const usersData = usersSnapshot.exists() ? usersSnapshot.val() : {};
-      setUsers(usersData);
       setLoading(prev => ({ ...prev, users: false }));
 
       // Prepare to fetch all data types

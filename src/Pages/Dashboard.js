@@ -439,6 +439,7 @@ const Dashboard = ({ appUser }) => {
           <table className="min-w-full divide-y divide-tplus-border">
             <thead className="bg-slate-50/50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">ผู้ยื่น</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">วันหยุดเดิม</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">วันที่ขอสลับ</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">สถานะ</th>
@@ -448,11 +449,12 @@ const Dashboard = ({ appUser }) => {
             <tbody className="bg-white divide-y divide-tplus-border">
               {mySwaps.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="text-center py-12 text-slate-500">ยังไม่มีประวัติการสลับวันหยุด</td>
+                  <td colSpan="5" className="text-center py-12 text-slate-500">ยังไม่มีประวัติการสลับวันหยุด</td>
                 </tr>
               ) : (
                 mySwaps.map((swap) => (
                   <tr key={swap.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-tplus-text">{appUser.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{swap.originalDate}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{swap.swapDate}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
